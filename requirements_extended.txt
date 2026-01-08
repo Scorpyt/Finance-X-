@@ -1,0 +1,7 @@
+# Additional dependencies for institutional extensions
+sqlalchemy==2.0.25
+requests==2.31.0
+python-dotenv==1.0.0
+prometheus-client==0.19.0
+pytz==2025.2
+yfinance>=0.2.36

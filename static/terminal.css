@@ -1,0 +1,193 @@
+:root {
+    --bg-color: #000000;
+    --text-color: #ff9900;
+    --text-dim: #885500;
+    --border-color: #333333;
+    --highlight: #111111;
+    --up-color: #00ff00;
+    --down-color: #ff0033;
+    --font-mono: 'Inconsolata', monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    height: 100vh;
+    overflow: hidden;
+    font-size: 12px;
+}
+
+.terminal-grid {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* HEADER */
+.status-bar {
+    height: 25px;
+    background: var(--highlight);
+    border-bottom: 1px solid var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.blink {
+    animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0;
+    }
+}
+
+/* MAIN AREA - 2x2 GRID */
+.main-area {
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: 30% 70%;
+    grid-template-rows: 60% 40%;
+    grid-template-areas:
+        "market chart"
+        "log details";
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel {
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#panel-market {
+    grid-area: market;
+}
+
+#panel-chart {
+    grid-area: chart;
+    border-right: none;
+}
+
+#panel-log {
+    grid-area: log;
+    border-bottom: none;
+}
+
+#panel-details {
+    grid-area: details;
+    border-right: none;
+    border-bottom: none;
+}
+
+.panel-header {
+    background: #080808;
+    color: var(--text-dim);
+    padding: 4px 8px;
+    border-bottom: 1px solid #222;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* CONTENT AREAS */
+.dense-list {
+    padding: 0;
+    overflow-y: auto;
+}
+
+.dense-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border-bottom: 1px solid #111;
+    cursor: pointer;
+}
+
+.dense-row:hover {
+    background: var(--highlight);
+}
+
+.scroll-area {
+    padding: 10px;
+    overflow-y: auto;
+    height: 100%;
+    white-space: pre-wrap;
+    line-height: 1.4;
+}
+
+.chart-container {
+    flex-grow: 1;
+    position: relative;
+    background: #020202;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.up {
+    color: var(--up-color);
+}
+
+.down {
+    color: var(--down-color);
+}
+
+/* FOOTER */
+.command-bar {
+    height: 30px;
+    background: var(--highlight);
+    border-top: 1px solid var(--text-dim);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.prompt {
+    color: var(--text-color);
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+input {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+    text-transform: uppercase;
+}
+
+/* SCROLLBARS */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

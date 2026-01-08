@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERMINAL - ADVANCED</title>
+    <link rel="stylesheet" href="terminal.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Locomotive Scroll -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css">
+    <!-- Professional Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        .chart-area {
+            position: relative;
+        }
+
+        #leafletMap {
+            width: 100%;
+            height: 100%;
+            min-height: 500px !important;
+        }
+
+        .leaflet-container {
+            background: #0a0a0a;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* Professional label styling */
+        .vessel-label {
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        /* Leaflet popup styling */
+        .leaflet-popup-content-wrapper {
+            background: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            border: 1px solid #2a2a2a !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        .leaflet-popup-tip {
+            background: #1a1a1a !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="terminal-container">
+        <div class="header">
+            <span style="font-weight: bold; color: #00ff00;">FINANCIAL INTELLIGENCE TERMINAL</span>
+            <span style="margin-left: auto;">
+                <span id="regimeDisplay">REGIME: LOADING</span> |
+                <span id="riskDisplay">RISK: --</span>
+            </span>
+        </div>
+
+        <div class="main-grid">
+            <div class="sidebar">
+                <div class="panel-title">MARKET WATCH</div>
+                <div id="marketList" class="dense-list"></div>
+            </div>
+
+            <div class="chart-area">
+                <div class="panel-title">
+                    <span id="chartSymbol">MARKET OVERVIEW</span>
+                    <div style="float: right;">
+                        <button id="btnOverview"
+                            style="background: #1f2937; color: #10b981; border: 1px solid #10b981; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px; font-weight: 600;">OVERVIEW</button>
+                        <button id="btnTankerMap"
+                            style="background: #111; color: #6b7280; border: 1px solid #374151; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px;">TANKER
+                            MAP</button>
+                        <button id="btnMarketMap"
+                            style="background: #111; color: #6b7280; border: 1px solid #374151; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px;">MARKET
+                            MAP</button>
+                        <button id="btnWaterRisk"
+                            style="background: #111; color: #6b7280; border: 1px solid #374151; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px;">💧
+                            WATER
+                            RISK</button>
+                    </div>
+                </div>
+
+                <!-- Landing Page View -->
+                <div id="landingView" data-scroll-container
+                    style="display: block; padding: 16px; overflow-y: auto; height: calc(100% - 40px);">
+                    <div id="landingContent" data-scroll-section></div>
+                </div>
+
+                <!-- Chart Canvas -->
+                <canvas id="mainChart" style="display: none;"></canvas>
+
+                <!-- Leaflet Map -->
+                <div id="leafletMap"
+                    style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+
+                <!-- Tanker Analysis Overlay -->
+                <div id="tankerAnalysisPanel"
+                    style="display: none; position: absolute; top: 10px; right: 10px; width: 350px; background: linear-gradient(135deg, rgba(17,24,39,0.95), rgba(31,41,55,0.95)); border: 1px solid #10b981; border-radius: 8px; padding: 16px; font-family: 'Inter', sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1000;">
+                    <div
+                        style="color: #10b981; font-size: 14px; font-weight: 700; margin-bottom: 12px; border-bottom: 2px solid #10b981; padding-bottom: 8px;">
+                        ⚠️ TANKER RISK ANALYSIS
+                    </div>
+                    <div id="tankerMetrics"></div>
+                </div>
+            </div>
+
+            <div class="event-log">
+                <div class="panel-title">INTELLIGENCE LOG</div>
+                <pre id="eventLog" style="font-size: 10px; line-height: 1.3;"></pre>
+            </div>
+
+            <div class="detail-view">
+                <div class="panel-title">
+                    <span>ANALYSIS / DETAILS</span>
+                    <button id="btnCommodityRisk"
+                        style="float: right; background: #111; color: #6b7280; border: 1px solid #374151; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;">📊
+                        COMMODITY RISK</button>
+                </div>
+                <div id="detailView" style="padding: 10px; font-size: 11px; line-height: 1.5;"></div>
+
+                <!-- Commodity Risk Panel (Hidden by default) -->
+                <div id="commodityRiskPanel"
+                    style="display: none; padding: 10px; font-size: 11px; line-height: 1.5; overflow-y: auto; max-height: calc(100vh - 200px);">
+                </div>
+            </div>
+        </div>
+
+        <div class="command-bar">
+            <span style="color: #00ff00; margin-right: 5px;">$</span>
+            <input type="text" id="cmdInput" placeholder="Enter command (TANKERS, CHART SPX, ADVISE, NEWS...)" />
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js"></script>
+    <script src="terminal.js"></script>
+    <script src="commodity_risk.js"></script>
+</body>
+
+</html>
