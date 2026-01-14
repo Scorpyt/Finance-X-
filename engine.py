@@ -4,29 +4,26 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Tuple
 from models import MarketEvent, ProcessedEvent, SystemState, MarketSnapshot, Ticker, PricePoint, MarketRegime, Tanker, GeoPoint
 
+import numpy as np
+from performance_engine import PerformanceEngine, HardwareNavigator
+
 class TechnicalAnalysis:
     @staticmethod
     def calculate_bollinger_bands(history: List[PricePoint], window: int = 20, num_std: float = 2.0) -> Tuple[List[float], List[float], List[float]]:
         """Returns (Upper Band, Middle Band, Lower Band)"""
         prices = [p.price for p in history]
+        
+        # Use High-Performance Vectorized Engine
+        if len(prices) >= window:
+            u, m, l = PerformanceEngine.calculate_bollinger_bands_vectorized(prices, window, num_std)
+            return u.tolist(), m.tolist(), l.tolist()
+            
+        # Fallback for insufficient data
         upper, middle, lower = [], [], []
-        
-        for i in range(len(prices)):
-            if i < window - 1:
-                # Not enough data
-                upper.append(prices[i])
-                middle.append(prices[i])
-                lower.append(prices[i])
-            else:
-                slice_data = prices[i-window+1 : i+1]
-                avg = sum(slice_data) / window
-                variance = sum((x - avg) ** 2 for x in slice_data) / window
-                std_dev = math.sqrt(variance)
-                
-                middle.append(avg)
-                upper.append(avg + (std_dev * num_std))
-                lower.append(avg - (std_dev * num_std))
-        
+        for p in prices:
+            upper.append(p)
+            middle.append(p)
+            lower.append(p)
         return upper, middle, lower
 
     @staticmethod
@@ -104,28 +101,35 @@ class TankerSimulator:
         speed_factor = 1.0
         if state == SystemState.CRASH:
             speed_factor = 0.3 # Major disruptions
-        
-        for t in self.tankers:
-            if t.status == "MOVING":
-                target = self.nodes[t.destination]
-                dy = target.lat - t.location.lat
-                dx = target.lon - t.location.lon
-                dist = math.sqrt(dx*dx + dy*dy)
-                
-                if dist < 2.0:
-                    # Reroute or anchor logic
-                    if random.random() > 0.8:
-                        t.status = "ANCHORED" 
+
+        # FAST PATH: Vectorized Update
+        if len(self.tankers) > 0:
+            # Extract arrays
+            lats = np.array([t.location.lat for t in self.tankers])
+            lons = np.array([t.location.lon for t in self.tankers])
+            dest_nodes = [self.nodes[t.destination] for t in self.tankers]
+            dest_lats = np.array([n.lat for n in dest_nodes])
+            dest_lons = np.array([n.lon for n in dest_nodes])
+            statuses = np.array([1 if t.status == "MOVING" else 0 for t in self.tankers])
+            
+            # Batch Update
+            new_lats, new_lons, new_headings, arrived_mask = PerformanceEngine.batch_update_tankers(
+                lats, lons, dest_lats, dest_lons, statuses, speed_factor
+            )
+            
+            # Write back
+            for i, t in enumerate(self.tankers):
+                if t.status == "MOVING":
+                    if arrived_mask[i]:
+                        # Arrival Logic
+                        if random.random() > 0.8:
+                            t.status = "ANCHORED"
+                        else:
+                            t.destination = random.choice([k for k in self.nodes.keys() if k != t.destination])
                     else:
-                         # New destination
-                         t.destination = random.choice([k for k in self.nodes.keys() if k != t.destination])
-                else:
-                    speed = 0.8 * speed_factor # Faster simulation for "Real Time" feel
-                    move_by_lat = (dy / dist) * speed
-                    move_by_lon = (dx / dist) * speed
-                    t.location.lat += move_by_lat
-                    t.location.lon += move_by_lon
-                    t.heading = math.degrees(math.atan2(dx, dy))
+                        t.location.lat = new_lats[i]
+                        t.location.lon = new_lons[i]
+                        t.heading = float(new_headings[i])
 
     def get_supply_metrics(self) -> Dict:
         total = len(self.tankers)
@@ -156,39 +160,46 @@ class MarketSimulator:
             t.history.append(PricePoint(start_time, t.current_price, 0))
 
     def update_prices(self, current_time: datetime, system_risk: float):
-        bias = 0.0
-        volatility_multiplier = 1.0
-
-        if system_risk > 25.0: # CRASH
-            bias = -0.02
-            volatility_multiplier = 4.0
-        elif system_risk > 15.0: # HIGH VOL
-            bias = -0.005
-            volatility_multiplier = 2.0
-        elif system_risk < 5.0: # STABLE
-            bias = 0.001
-            volatility_multiplier = 0.8
-
-        for sym, ticker in self.tickers.items():
-            base_vol = 0.002 if sym != "VIX" else 0.05
-            if sym == "BTC": base_vol = 0.01
-            if sym in ["WTI", "BRENT"]: base_vol = 0.008
-
-            shock = random.gauss(0, base_vol * volatility_multiplier)
-            if sym == "VIX":
-                change_pct = shock - (bias * 5)
-            else:
-                change_pct = shock + bias
-
-            new_price = ticker.current_price * (1 + change_pct)
-            ticker.current_price = round(new_price, 2)
-            volume = int(random.uniform(1000, 5000) * volatility_multiplier)
+        # Direct Acceleration Logic
+        fidelity = HardwareNavigator.determine_fidelity_level()
+        noise_factor = 1.0
+        if fidelity == "ULTRA": noise_factor = 1.2 # More microstructure noise
+        if fidelity == "EFFICIENT": noise_factor = 0.5 # Smoother, less compute
+        
+        # Gather current state
+        tickers_list = list(self.tickers.values())
+        current_prices = np.array([t.current_price for t in tickers_list])
+        
+        # Volatilities map
+        vol_map = {
+            "VIX": 0.05,
+            "BTC": 0.01,
+            "WTI": 0.008,
+            "BRENT": 0.008
+        }
+        vols = np.array([vol_map.get(t.symbol, 0.002) for t in tickers_list])
+        
+        # Vectorized Update
+        new_prices = PerformanceEngine.batch_update_prices(current_prices, vols, system_risk)
+        
+        # Update Objects
+        for i, t in enumerate(tickers_list):
+            old_p = t.current_price
+            t.current_price = float(new_prices[i])
             
-            ticker.history.append(PricePoint(current_time, ticker.current_price, volume))
-            if len(ticker.history) > 100:
-                ticker.history.pop(0)
+            # Simple volume sim
+            multiplier = 4.0 if system_risk > 25.0 else 1.0
+            volume = int(random.uniform(1000, 5000) * multiplier)
+            
+            t.history.append(PricePoint(current_time, t.current_price, volume))
+            if len(t.history) > 100:
+                t.history.pop(0)
 
-            ticker.change_pct = ((ticker.current_price - ticker.history[0].price) / ticker.history[0].price) * 100
+            # Calculate change from start of history window
+            if t.history:
+              t.change_pct = ((t.current_price - t.history[0].price) / t.history[0].price) * 100
+
+from database import DatabaseManager
 
 class IntelligenceEngine:
     def __init__(self, decay_rate: float = 0.1):
@@ -198,6 +209,9 @@ class IntelligenceEngine:
         self.current_regime = MarketRegime.LOW_VOL
         self.simulator = MarketSimulator()
         self.tanker_sim = TankerSimulator()
+        
+        # Database Integration
+        self.db = DatabaseManager()
 
     def ingest(self, event: MarketEvent):
         relevance = event.base_impact * 1.0 
@@ -208,16 +222,33 @@ class IntelligenceEngine:
         )
         self.events.append(processed)
         print(f"[{event.timestamp.strftime('%H:%M:%S')}] Ingested: {event.description} (Impact: {event.base_impact})")
+        
+        # Log to DB
+        self.db.log_event(event.timestamp, event.description, event.base_impact, event.event_type)
 
     def apply_decay(self, current_time: datetime):
-        active_events = []
-        for p_event in self.events:
-            time_delta = (current_time - p_event.original_event.timestamp).total_seconds() / 3600.0 # Hours
-            new_weight = p_event.relevance_score * math.exp(-self.decay_rate * time_delta)
-            p_event.current_weight = new_weight
-            if new_weight > 0.5:
-                active_events.append(p_event)
-        self.events = active_events
+        if not self.events:
+            return
+
+        # Vectorized Decay
+        current_ts = current_time.timestamp()
+        
+        # Extract arrays
+        weights = np.array([e.relevance_score for e in self.events])
+        timestamps = np.array([e.original_event.timestamp.timestamp() for e in self.events])
+        
+        # Batch Calculate
+        new_weights = PerformanceEngine.calculate_decay_batch(weights, timestamps, current_ts, self.decay_rate)
+        
+        # Update and Filter (Python loop needed for object update, but math is done)
+        active_rec = []
+        for i, event in enumerate(self.events):
+            w = float(new_weights[i])
+            event.current_weight = w
+            if w > 0.5:
+                active_rec.append(event)
+        
+        self.events = active_rec
 
     def detect_state(self, current_time: datetime) -> MarketSnapshot:
         total_risk = sum(e.current_weight for e in self.events)
@@ -237,6 +268,25 @@ class IntelligenceEngine:
 
         top_events = sorted(self.events, key=lambda x: x.current_weight, reverse=True)[:5]
         
+        # Log State Snapshot
+        state_val = self.current_state.value if hasattr(self.current_state, 'value') else str(self.current_state)
+        regime_val = self.current_regime.value if hasattr(self.current_regime, 'value') else str(self.current_regime)
+        self.db.log_snapshot(current_time, state_val, total_risk, regime_val)
+        
+        # Log Prices
+        price_batch = []
+        for t in self.simulator.tickers.values():
+             if t.history:
+                 last_pt = t.history[-1]
+                 price_batch.append({
+                     "timestamp": current_time,
+                     "symbol": t.symbol,
+                     "price": last_pt.price,
+                     "change": t.change_pct,
+                     "volume": last_pt.volume
+                 })
+        self.db.log_price_batch(price_batch)
+        
         return MarketSnapshot(
             timestamp=current_time,
             state=self.current_state,
@@ -254,7 +304,8 @@ class IntelligenceEngine:
                 "symbol": t.symbol,
                 "price": t.current_price,
                 "change": t.change_pct,
-                "sector": t.sector
+                "sector": t.sector,
+                "history": [p.price for p in t.history[-30:]] # Last 30 points for sparkline
             }
             for t in self.simulator.tickers.values()
         ]

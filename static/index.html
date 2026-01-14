@@ -53,10 +53,16 @@
 <body>
     <div class="terminal-container">
         <div class="header">
-            <span style="font-weight: bold; color: #00ff00;">FINANCIAL INTELLIGENCE TERMINAL</span>
-            <span style="margin-left: auto;">
-                <span id="regimeDisplay">REGIME: LOADING</span> |
-                <span id="riskDisplay">RISK: --</span>
+            <span
+                style="font-weight: 700; color: var(--accent-cyan); font-size: 18px; text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);">
+                ⚡ FINANCE-X INTELLIGENCE TERMINAL
+            </span>
+            <span style="margin-left: auto; display: flex; gap: 20px; align-items: center;">
+                <span id="cpu-stat" style="color: #64748b; font-family:'Roboto Mono'; font-size: 12px;">CPU: --%</span>
+                <span class="blink" style="color: var(--accent-green); font-weight: 700;">● LIVE</span>
+                <span id="regimeDisplay" style="color: var(--accent-yellow);">REGIME: LOADING</span>
+                <span style="color: var(--text-dim);">|</span>
+                <span id="riskDisplay" style="color: var(--accent-red);">RISK: --</span>
             </span>
         </div>
 
@@ -66,10 +72,55 @@
                 <div id="marketList" class="dense-list"></div>
             </div>
 
-            <div class="chart-area">
+            <div class="chart-area" style="position: relative;">
+                <div id="gridControls"
+                    style="position: absolute; bottom: 10px; right: 10px; display: none; gap: 5px; z-index: 100; background: rgba(0,0,0,0.8); padding: 4px; border-radius: 4px;">
+                    <span id="gridPageNum"
+                        style="color: #fff; font-size: 11px; font-family: 'Roboto Mono'; margin-right: 5px; align-self: center;">PAGE
+                        1/1</span>
+                    <button id="btnGridPrev"
+                        style="background: #333; border: 1px solid #555; color: #fff; cursor: pointer; padding: 2px 6px;">&lt;</button>
+                    <button id="btnGridNext"
+                        style="background: #333; border: 1px solid #555; color: #fff; cursor: pointer; padding: 2px 6px;">&gt;</button>
+                </div>
                 <div class="panel-title">
                     <span id="chartSymbol">MARKET OVERVIEW</span>
+                    <!-- System Nav -->
+                    <div
+                        style="display: flex; gap: 2px; background: #111; padding: 2px; border: 1px solid #333; border-radius: 4px;">
+                        <button id="btnBack" class="nav-btn" style="color: #fca5a5; display:none;">← BACK</button>
+                        <div style="width:1px; background:#333; margin:0 4px;"></div>
+                        <button id="btnSysMarket" class="nav-btn active-nav">MARKET PLEX</button>
+                        <button id="btnSysLogistics" class="nav-btn">LOGISTICS GRID</button>
+                        <button id="btnSysSecure" class="nav-btn">SECURE CORE</button>
+                    </div>
+                    <style>
+                        .nav-btn {
+                            background: transparent;
+                            color: #666;
+                            border: none;
+                            padding: 4px 10px;
+                            cursor: pointer;
+                            font-family: 'Roboto Mono', monospace;
+                            font-size: 10px;
+                            font-weight: 700;
+                            transition: all 0.2s;
+                        }
+
+                        .nav-btn:hover {
+                            color: #fff;
+                            background: #222;
+                        }
+
+                        .active-nav {
+                            background: #1f2937 !important;
+                            color: #10b981 !important;
+                            border-bottom: 2px solid #10b981 !important;
+                        }
+                    </style>
                     <div style="float: right;">
+                        <button id="btnActions"
+                            style="background: #7c3aed; color: #fff; border: 1px solid #7c3aed; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px; font-weight:700;">ACTIONS</button>
                         <button id="btnOverview"
                             style="background: #1f2937; color: #10b981; border: 1px solid #10b981; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px; font-weight: 600;">OVERVIEW</button>
                         <button id="btnTankerMap"

@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeMode = 'LANDING'; // 'LANDING', 'CHART', 'MAP_CANVAS', 'MAP_HD'
     let activeSymbol = 'SPX';
     let chartData = [];
+    let gridData = [];
     let chartBands = null;
     let mapAssets = [];
     let mapTitle = "GLOBAL ASSET MAP";
@@ -32,10 +33,23 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeChart();
     window.addEventListener('resize', resizeChart);
 
-    // Polling Loop
-    setInterval(updateMarketData, 10000);
-    setInterval(updateSystemState, 15000);
-    setInterval(updateLandingPage, 30000); // Update landing every 30s
+    // AUTO-STARTUP SEQUENCE
+    console.log("🚀 BOOT SEQUENCE INITIATED...");
+    setTimeout(() => {
+        executeCommand('CHART SPX'); // Show Chart immediately
+        executeCommand('risks');     // Update risk display
+        executeCommand('news');      // Populate log
+    }, 500);
+
+    // Polling Loop - AGGRESSIVE REAL-TIME UPDATES
+    setInterval(updateMarketData, 2000); // 2s polling for price updates
+    setInterval(updateSystemState, 5000); // 5s for risk updates
+    setInterval(() => {
+        if (activeMode === 'CHART') {
+            executeCommand(`CHART ${activeSymbol}`); // Auto-refresh active chart
+        }
+    }, 5000);
+
     updateMarketData();
     updateSystemState();
     updateLandingPage(); // Load landing page data on init
@@ -44,20 +58,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnOverview = document.getElementById('btnOverview');
     const btnTankerMap = document.getElementById('btnTankerMap');
     const btnMarketMap = document.getElementById('btnMarketMap');
+    const btnActions = document.getElementById('btnActions');
+
+    const btnSysMarket = document.getElementById('btnSysMarket');
+    const btnSysLogistics = document.getElementById('btnSysLogistics');
+    const btnSysSecure = document.getElementById('btnSysSecure');
+
+    function updateNavState(activeBtn) {
+        [btnSysMarket, btnSysLogistics, btnSysSecure].forEach(btn => {
+            if (btn) btn.classList.remove('active-nav');
+        });
+        if (activeBtn) activeBtn.classList.add('active-nav');
+    }
+
+    if (btnSysMarket) {
+        btnSysMarket.addEventListener('click', () => {
+            updateNavState(btnSysMarket);
+            executeCommand('NIFTY');
+        });
+    }
+
+    if (btnSysLogistics) {
+        btnSysLogistics.addEventListener('click', () => {
+            updateNavState(btnSysLogistics);
+            executeCommand('TANKERS');
+        });
+    }
+
+    if (btnSysSecure) {
+        btnSysSecure.addEventListener('click', () => {
+            updateNavState(btnSysSecure);
+            executeCommand('DISRUPTION');
+        });
+    }
+
+    if (btnActions) {
+        btnActions.addEventListener('click', () => {
+            executeCommand('HELP');
+        });
+    }
 
     if (btnOverview) {
         btnOverview.addEventListener('click', () => {
             disableTankerAnalysisMode();
-            switchView('LANDING');
-
-            // Scroll landing page to top
-            const landingView = document.getElementById('landingView');
-            if (landingView) {
-                landingView.scrollTop = 0;
-            }
-
-            // Always fetch fresh landing page data
-            updateLandingPage();
+            executeCommand('OVERVIEW');
         });
     }
 
@@ -605,15 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Landing page data fetching and rendering
     async function updateLandingPage() {
-        try {
-            const res = await fetch('/api/v2/landing');
-            landingData = await res.json();
-            if (activeMode === 'LANDING') {
-                renderLandingPage();
-            }
-        } catch (err) {
-            console.error('Error loading landing page:', err);
-        }
+        // Legacy: API removed.
     }
 
     function renderLandingPage() {
@@ -961,12 +997,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Command Input
+    // Command Input History
+    let cmdHistory = [];
+    let historyIndex = -1;
+
     cmdInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
             const command = cmdInput.value;
             cmdInput.value = '';
+            historyIndex = -1; // Reset
+
             if (command.trim() === '') return;
+
+            // Add to history if unique/new
+            if (cmdHistory[0] !== command) {
+                cmdHistory.unshift(command);
+            }
+            if (cmdHistory.length > 50) cmdHistory.pop();
+
             await executeCommand(command);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (historyIndex < cmdHistory.length - 1) {
+                historyIndex++;
+                cmdInput.value = cmdHistory[historyIndex];
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIndex > 0) {
+                historyIndex--;
+                cmdInput.value = cmdHistory[historyIndex];
+            } else {
+                historyIndex = -1;
+                cmdInput.value = '';
+            }
         }
     });
 
@@ -980,6 +1044,102 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeMode === 'CHART') drawChart();
         if (activeMode === 'MAP_CANVAS') drawMap();
         if (activeMode === 'MAP_HD') renderHDMap();
+        if (activeMode === 'OVERVIEW_GRID') renderOverviewGrid();
+    }
+
+    let gridPage = 0;
+    const ITEMS_PER_PAGE = 9;
+
+    function renderOverviewGrid() {
+        if (!gridData || gridData.length === 0) return;
+        const w = mainChart.width;
+        const h = mainChart.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Pagination Controls
+        const totalPages = Math.ceil(gridData.length / ITEMS_PER_PAGE);
+        const controls = document.getElementById('gridControls');
+        const pageNum = document.getElementById('gridPageNum');
+
+        if (controls) {
+            controls.style.display = 'flex';
+            pageNum.innerText = `PAGE ${gridPage + 1}/${totalPages}`;
+        }
+
+        const start = gridPage * ITEMS_PER_PAGE;
+        const viewData = gridData.slice(start, start + ITEMS_PER_PAGE);
+
+        const rows = 3;
+        const cols = 3;
+        const cellW = w / cols;
+        const cellH = h / rows;
+
+        ctx.font = 'bold 12px Inconsolata';
+        ctx.lineWidth = 1.5;
+
+        viewData.forEach((item, index) => {
+            const r = Math.floor(index / cols);
+            const c = index % cols;
+
+            const x = c * cellW;
+            const y = r * cellH;
+            const pad = 15;
+            const chartW = cellW - 2 * pad;
+            const chartH = cellH * 0.5; // Chart takes 50% height
+            const chartX = x + pad;
+            const chartY = y + cellH * 0.4; // Start chart 40% down
+
+            // Draw Box Border
+            ctx.strokeStyle = '#222';
+            ctx.strokeRect(x, y, cellW, cellH);
+
+            // Header Background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.fillRect(x, y, cellW, 30);
+
+            // Title
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'left';
+            ctx.fillText(item.symbol, x + pad, y + 20);
+
+            // Price
+            const color = item.change >= 0 ? '#10b981' : '#ef4444';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'right';
+            ctx.fillText(`${item.price.toFixed(2)}`, x + cellW - pad, y + 20);
+
+            // Change
+            ctx.font = '10px Inconsolata';
+            ctx.fillText(`${item.change > 0 ? '+' : ''}${item.change}%`, x + cellW - pad, y + cellH - 10);
+            ctx.font = 'bold 12px Inconsolata';
+
+            // Chart
+            const prices = (item.history && item.history.map(p => p.p)) || [];
+            if (prices.length > 1) {
+                const min = Math.min(...prices);
+                const max = Math.max(...prices);
+                const range = max - min || 1;
+
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                prices.forEach((p, i) => {
+                    const cx = chartX + (i / (prices.length - 1)) * chartW;
+                    const cy = (chartY + chartH) - ((p - min) / range * chartH);
+                    if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+                });
+                ctx.stroke();
+
+                // Gradient fill
+                const grad = ctx.createLinearGradient(0, chartY, 0, chartY + chartH);
+                grad.addColorStop(0, color === '#10b981' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)');
+                grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.lineTo(chartX + chartW, chartY + chartH);
+                ctx.lineTo(chartX, chartY + chartH);
+                ctx.closePath();
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }
+        });
     }
 
     async function updateMarketData() {
@@ -1011,6 +1171,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             document.getElementById('regimeDisplay').innerText = `REGIME: ${data.regime}`;
             document.getElementById('riskDisplay').innerText = `RISK: ${data.risk}`;
+
+            // Hardware Diagnostics
+            try {
+                const diagRes = await fetch('/system/diagnostics');
+                const diag = await diagRes.json();
+                const cpuEl = document.getElementById('cpu-stat');
+                cpuEl.innerText = `CPU: ${diag.cpu_percent}% [${diag.acceleration_mode}]`;
+
+                // Color code load
+                if (diag.cpu_percent > 80) cpuEl.style.color = '#ef4444';
+                else if (diag.cpu_percent > 50) cpuEl.style.color = '#f59e0b';
+                else cpuEl.style.color = '#10b981';
+            } catch (dErr) { console.warn(dErr); }
 
             // Fetch Log - wrapped in try-catch to prevent errors
             try {
@@ -1052,22 +1225,142 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { }
     }
 
-    async function executeCommand(cmd) {
+    // Auth State
+    let sessionToken = null;
+
+    // Navigation History
+    let navHistory = [];
+    let currentNavCmd = "OVERVIEW";
+    const btnBack = document.getElementById('btnBack');
+
+    if (btnBack) {
+        btnBack.addEventListener('click', goBack);
+    }
+
+    if (document.getElementById('btnGridNext')) {
+        document.getElementById('btnGridNext').addEventListener('click', () => {
+            const totalPages = Math.ceil((gridData?.length || 0) / ITEMS_PER_PAGE);
+            if (gridPage < totalPages - 1) {
+                gridPage++;
+                renderOverviewGrid();
+            }
+        });
+    }
+
+    if (document.getElementById('btnGridPrev')) {
+        document.getElementById('btnGridPrev').addEventListener('click', () => {
+            if (gridPage > 0) {
+                gridPage--;
+                renderOverviewGrid();
+            }
+        });
+    }
+
+    function isNavCommand(cmd) {
+        if (!cmd) return false;
+        const c = cmd.toUpperCase();
+        // Commands that represent a "Page"
+        const prefixes = ['OVERVIEW', 'TANKER', 'MAP', 'CHART', 'QUOTE', 'SCAN', 'RISK', 'ADVISE', 'NEWS', 'TODAY', 'MEMORY', 'DISRUPTION', 'AUTH', 'SQL', 'NIFTY'];
+        return prefixes.some(p => c.startsWith(p));
+    }
+
+    function goBack() {
+        if (navHistory.length === 0) return;
+        const prev = navHistory.pop();
+        currentNavCmd = prev;
+        executeCommand(prev, true);
+
+        if (navHistory.length === 0 && btnBack) btnBack.style.display = 'none';
+
+        // Sync Nav Bar
+        if (window.updateNavState) {
+            if (prev.startsWith('OVERVIEW') || prev === 'NIFTY') window.updateNavState(document.getElementById('btnSysMarket'));
+            else if (prev.includes('TANKER')) window.updateNavState(document.getElementById('btnSysLogistics'));
+            else if (prev.includes('SCAN') || prev.includes('AUTH') || prev.includes('SQL') || prev === 'DISRUPTION') window.updateNavState(document.getElementById('btnSysSecure'));
+            else window.updateNavState(null);
+        }
+    }
+
+    async function executeCommand(cmd, isBack = false) {
+        if (!cmd) return;
+
+        if (cmd === 'DEBUG') {
+            alert(`Grid Data Items: ${gridData ? gridData.length : 'NULL'}`);
+            if (gridData && gridData.length > 0) {
+                alert(`Sample: ${JSON.stringify(gridData[0])}`);
+                // Draw Red Box
+                const w = mainChart.width;
+                const h = mainChart.height;
+                ctx.fillStyle = 'red';
+                ctx.fillRect(w / 2 - 50, h / 2 - 50, 100, 100);
+                ctx.fillStyle = 'white';
+                ctx.fillText("CANVAS ALIVE", w / 2 - 40, h / 2);
+            } else {
+                alert("NO DATA to render.");
+            }
+            return;
+        }
+
+        // Handle History
+        if (!isBack && isNavCommand(cmd)) {
+            // Only push if different from current
+            if (cmd.toUpperCase() !== currentNavCmd.toUpperCase()) {
+                navHistory.push(currentNavCmd);
+                currentNavCmd = cmd;
+                if (btnBack) btnBack.style.display = 'block';
+
+                // Reset Grid Page on new view
+                if (!isBack && cmd === 'NIFTY') gridPage = 0;
+
+                // Sync Nav Bar (Forward) is handled by button clicks usually, but direct commands need sync
+                if (window.updateNavState) {
+                    if (cmd.startsWith('OVERVIEW') || cmd === 'NIFTY') window.updateNavState(document.getElementById('btnSysMarket'));
+                    else if (cmd.includes('TANKER')) window.updateNavState(document.getElementById('btnSysLogistics'));
+                    else if (cmd.includes('SCAN') || cmd.includes('AUTH') || cmd === 'DISRUPTION') window.updateNavState(document.getElementById('btnSysSecure'));
+                    else window.updateNavState(null);
+                }
+            }
+        }
+
         detailView.innerHTML = "PROCESSING...";
         try {
             const res = await fetch('/command', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': sessionToken || ''
+                },
                 body: JSON.stringify({ command: cmd })
             });
             const data = await res.json();
             handleResponse(data);
         } catch (err) {
-            detailView.innerText = "ERROR";
+            console.error(err);
         }
     }
 
     function handleResponse(data) {
+        if (data.type === 'AUTH_SUCCESS') {
+            sessionToken = data.token;
+            detailView.innerHTML = `
+            <div style="border: 2px solid #10b981; padding: 10px; color: #10b981; font-family:'Roboto Mono'">
+                <div style="font-weight:bold">${data.title}</div>
+                <div>${data.content}</div>
+                <div style="font-size:10px; margin-top:5px; opacity:0.8">TOKEN: ${data.token.substring(0, 8)}...</div>
+            </div>`;
+            return;
+        }
+
+        if (data.type === 'ERROR') {
+            const color = '#ef4444';
+            detailView.innerHTML = `
+            <div style="border-left: 2px solid ${color}; padding-left: 10px; color: #e0e0e0;">
+                <div style="color:${color}; font-weight:bold">ERROR</div>
+                <div>${data.content}</div>
+            </div>`;
+            return;
+        }
+
         if (data.type === 'QUOTE' || data.type === 'CHART_FULL') {
             activeMode = 'CHART';
             activeSymbol = data.symbol;
@@ -1087,28 +1380,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         else if (data.type === 'MAP_DATA') {
             if (data.map_mode === 'MARKET') {
-                // Market map data
+                // ... (existing market map logic)
                 marketData = data.markets || [];
-                document.getElementById('chartSymbol').innerText = "MARKET MAP";
-                detailView.innerHTML = `
-                <div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>
-                TRACKING: ${marketData.length} GLOBAL MARKETS<br>
-                CLICK COUNTRY CARD → LOAD MARKET DATA<br>
-                <div style="margin-top:10px;color:#888;">Markets: USA, UK, Germany, Japan, China, India, Brazil</div>`;
+                // ...
             } else {
-                // Tanker map data
+                // ... (existing tanker map logic)
                 activeMode = 'MAP_CANVAS';
                 mapAssets = data.assets || [];
                 mapTitle = data.title;
                 if (data.metrics) mapTitle += ` [${data.metrics}]`;
                 document.getElementById('chartSymbol').innerText = "ASSET MAP";
                 renderMainView();
-                detailView.innerHTML = `
-                <div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>
-                STATUS: ACTIVE MONITORING<br>
-                FLEET: ${mapAssets.length} VESSELS<br>
-                LOGIC: SUPPLY CHAIN MONITORING ENABLED`;
+                // ...
             }
+        }
+        else if (data.type === 'OVERVIEW_GRID') {
+            console.log("OVERVIEW_GRID Recv:", data.grids);
+            activeMode = 'OVERVIEW_GRID';
+            gridData = data.grids || [];
+            document.getElementById('chartSymbol').innerText = "MARKET DASHBOARD";
+            renderMainView();
+            detailView.innerHTML = `
+                <div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>
+                VIEW: MULTI-ASSET OVERVIEW<br>
+                TRACKING: ${gridData.length} KEY INDICATORS<br>
+                CPU OPTIMIZATION: ACTIVE`;
         }
         else if (data.type === 'NEWS_FEED') {
             let html = `<div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>`;
@@ -1118,6 +1414,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span style="color:#00aaff">${item.source} ${item.time}</span><br>
                     ${item.headline} <span style="color:#ff3300">[IMPACT: ${item.impact}]</span>
                 </div>`;
+            });
+            detailView.innerHTML = html;
+        }
+        else if (data.type === 'HELP_MENU') {
+            let html = `<div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>`;
+            data.sections.forEach(sec => {
+                html += `<div style="margin-bottom:8px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 4px;">${sec.category}</div>`;
+                sec.cmds.forEach(cmd => {
+                    const parts = cmd.split(' ');
+                    const main = parts[0];
+                    const desc = parts.slice(1).join(' ');
+                    html += `
+                    <div class="cmd-item" onclick="cmdInput.value='${main} '; cmdInput.focus();" style="cursor:pointer; margin-bottom:4px; font-family:'Roboto Mono'; font-size:11px;">
+                        <span style="color:#00e5ff; font-weight:bold;">${main}</span> <span style="color:#888;">${desc}</span>
+                    </div>`;
+                });
+                html += `<div style="height:8px"></div>`;
             });
             detailView.innerHTML = html;
         }
@@ -1134,7 +1447,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function drawChart() {
-        if (!chartData.length) return;
+        if (!chartData || chartData.length === 0) return;
+
         const w = mainChart.width;
         const h = mainChart.height;
         ctx.clearRect(0, 0, w, h);
@@ -1143,7 +1457,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let min = Math.min(...prices);
         let max = Math.max(...prices);
 
+        // Handle single point or flat line case
+        if (min === max) {
+            min -= 1;
+            max += 1;
+        }
+
         // Adjust scale for bands if present
+
         if (chartBands) {
             const lower = chartBands.lower.filter(v => v);
             const upper = chartBands.upper.filter(v => v);
@@ -1157,16 +1478,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Draw Bollinger Bands (Area)
         if (chartBands && chartBands.upper.length) {
+            const xStep = chartData.length > 1 ? (w / (chartData.length - 1)) : 0;
             ctx.beginPath();
+
             chartBands.upper.forEach((v, i) => {
-                const x = (i / (chartData.length - 1)) * w;
+                const x = i * xStep;
                 const y = h - ((v - min) / range) * h;
                 if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             });
             // Reverse down lower band
             for (let i = chartBands.lower.length - 1; i >= 0; i--) {
                 const v = chartBands.lower[i];
-                const x = (i / (chartData.length - 1)) * w;
+                const x = i * xStep;
                 const y = h - ((v - min) / range) * h;
                 ctx.lineTo(x, y);
             }
@@ -1183,8 +1506,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.beginPath();
         ctx.strokeStyle = '#00aaff';
         ctx.lineWidth = 2;
+        const xStep = chartData.length > 1 ? (w / (chartData.length - 1)) : 0;
+
         chartData.forEach((d, i) => {
-            const x = (i / (chartData.length - 1)) * w;
+            const x = i * xStep;
             const y = h - ((d.p - min) / range) * h;
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         });
@@ -1308,6 +1633,33 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText('● ANCHORED', 10, h - 15);
     }
 
+    function drawSparkline(ctx, data, color) {
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!data || data.length < 2) return;
+
+        const min = Math.min(...data);
+        const max = Math.max(...data);
+        const range = max - min || 1;
+
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+
+        data.forEach((p, i) => {
+            const x = (i / (data.length - 1)) * w;
+            // Invert Y (canvas origin is top-left)
+            const y = h - ((p - min) / range) * (h * 0.8) - (h * 0.1);
+
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+
+        ctx.stroke();
+    }
+
     window.executeCommand = executeCommand;
 });
-    
+
