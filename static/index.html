@@ -31,11 +31,6 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        /* Professional label styling */
-        .vessel-label {
-            font-family: 'Inter', sans-serif !important;
-        }
-
         /* Leaflet popup styling */
         .leaflet-popup-content-wrapper {
             background: #1a1a1a !important;
@@ -91,7 +86,7 @@
                         <button id="btnBack" class="nav-btn" style="color: #fca5a5; display:none;">← BACK</button>
                         <div style="width:1px; background:#333; margin:0 4px;"></div>
                         <button id="btnSysMarket" class="nav-btn active-nav">MARKET PLEX</button>
-                        <button id="btnSysLogistics" class="nav-btn">LOGISTICS GRID</button>
+                        <button id="btnSysStudy" class="nav-btn">📚 STUDY</button>
                         <button id="btnSysSecure" class="nav-btn">SECURE CORE</button>
                     </div>
                     <style>
@@ -123,9 +118,6 @@
                             style="background: #7c3aed; color: #fff; border: 1px solid #7c3aed; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px; font-weight:700;">ACTIONS</button>
                         <button id="btnOverview"
                             style="background: #1f2937; color: #10b981; border: 1px solid #10b981; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px; font-weight: 600;">OVERVIEW</button>
-                        <button id="btnTankerMap"
-                            style="background: #111; color: #6b7280; border: 1px solid #374151; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px;">TANKER
-                            MAP</button>
                         <button id="btnMarketMap"
                             style="background: #111; color: #6b7280; border: 1px solid #374151; padding: 2px 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; margin-right: 5px;">MARKET
                             MAP</button>
@@ -148,16 +140,6 @@
                 <!-- Leaflet Map -->
                 <div id="leafletMap"
                     style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
-
-                <!-- Tanker Analysis Overlay -->
-                <div id="tankerAnalysisPanel"
-                    style="display: none; position: absolute; top: 10px; right: 10px; width: 350px; background: linear-gradient(135deg, rgba(17,24,39,0.95), rgba(31,41,55,0.95)); border: 1px solid #10b981; border-radius: 8px; padding: 16px; font-family: 'Inter', sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1000;">
-                    <div
-                        style="color: #10b981; font-size: 14px; font-weight: 700; margin-bottom: 12px; border-bottom: 2px solid #10b981; padding-bottom: 8px;">
-                        ⚠️ TANKER RISK ANALYSIS
-                    </div>
-                    <div id="tankerMetrics"></div>
-                </div>
             </div>
 
             <div class="event-log">
@@ -183,7 +165,7 @@
 
         <div class="command-bar">
             <span style="color: #00ff00; margin-right: 5px;">$</span>
-            <input type="text" id="cmdInput" placeholder="Enter command (TANKERS, CHART SPX, ADVISE, NEWS...)" />
+            <input type="text" id="cmdInput" placeholder="Enter command (NIFTY, CHART SPX, ADVISE, NEWS...)" />
         </div>
     </div>
 

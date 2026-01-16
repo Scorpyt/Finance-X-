@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance-X | Professional Trading Terminal</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Particle Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero">
+            <div class="logo-container">
+                <div class="logo">FINANCE-X</div>
+                <div class="logo-subtitle">Professional Trading Intelligence</div>
+            </div>
+
+            <h1 class="hero-title">
+                <span class="title-line">Real-Time Market</span>
+                <span class="title-line">Intelligence Terminal</span>
+            </h1>
+
+            <p class="hero-description">
+                Advanced analytics, live data, and AI-powered insights for traders and investors
+            </p>
+
+            <!-- Mode Selection -->
+            <div class="mode-selection">
+                <div class="mode-card ordinary-card" id="ordinaryCard">
+                    <div class="mode-icon">📊</div>
+                    <h2 class="mode-title">Ordinary Mode</h2>
+                    <p class="mode-description">Essential trading tools for everyday investors</p>
+                    <ul class="mode-features">
+                        <li>✓ Live NIFTY 50 Data</li>
+                        <li>✓ Price Charts</li>
+                        <li>✓ Stock Quotes</li>
+                        <li>✓ Basic Analysis</li>
+                    </ul>
+                    <button class="mode-button ordinary-button" onclick="selectMode('ordinary')">
+                        Launch Ordinary
+                        <span class="button-arrow">→</span>
+                    </button>
+                </div>
+
+                <div class="mode-card enterprise-card" id="enterpriseCard">
+                    <div class="mode-badge">PREMIUM</div>
+                    <div class="mode-icon">💼</div>
+                    <h2 class="mode-title">Enterprise Mode</h2>
+                    <p class="mode-description">Professional-grade analytics and advanced features</p>
+                    <ul class="mode-features">
+                        <li>✓ All Ordinary Features</li>
+                        <li>✓ Volatility Analysis</li>
+                        <li>✓ Heatmap Visualizations</li>
+                        <li>✓ Correlation Matrix</li>
+                        <li>✓ Bloomberg-Style Tools</li>
+                        <li>✓ Economic Calendar</li>
+                    </ul>
+                    <button class="mode-button enterprise-button" onclick="selectMode('enterprise')">
+                        Launch Enterprise
+                        <span class="button-arrow">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Real-Time Data</h3>
+                    <p>Live market data from NSE and global exchanges</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered</h3>
+                    <p>Intelligent risk detection and analysis</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📈</div>
+                    <h3>Advanced Analytics</h3>
+                    <p>Volatility, correlations, and technical indicators</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure</h3>
+                    <p>Enterprise-grade security and data protection</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Finance-X. Professional Trading Intelligence Platform.</p>
+        </footer>
+    </div>
+
+    <!-- GSAP Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/ScrollTrigger.min.js"></script>
+    <script src="/js/animations.js"></script>
+
+    <script>
+        function selectMode(mode) {
+            // Animate transition
+            gsap.to('.container', {
+                opacity: 0,
+                scale: 0.95,
+                duration: 0.5,
+                ease: 'power2.inOut',
+                onComplete: () => {
+                    window.location.href = `/${mode}`;
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -98,54 +98,6 @@ class PerformanceEngine:
         return np.round(new_prices, 2)
 
     @staticmethod
-    def batch_update_tankers(latitudes: np.ndarray, 
-                            longitudes: np.ndarray, 
-                            dest_lats: np.ndarray, 
-                            dest_lons: np.ndarray,
-                            statuses: np.ndarray,
-                            speed_factor: float = 1.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Update positions of thousands of tankers simultaneously using vector math.
-        """
-        # Only move tankers with status 1 (MOVING), assume status encoded as int
-        moving_mask = (statuses == 1)
-        
-        # Calculate deltas
-        dy = dest_lats - latitudes
-        dx = dest_lons - longitudes
-        
-        # Calculate distances
-        distances = np.sqrt(dx**2 + dy**2)
-        
-        # Avoid division by zero
-        distances = np.maximum(distances, 0.001)
-        
-        # Check arrival (distance < 2.0)
-        arrived_mask = distances < 2.0
-        
-        # Calculate movements
-        # Speed = 0.8 * factor
-        speed = 0.8 * speed_factor
-        
-        move_lat = (dy / distances) * speed
-        move_lon = (dx / distances) * speed
-        
-        # Apply movement only to moving ships that haven't arrived
-        active_mask = moving_mask & (~arrived_mask)
-        
-        new_lats = latitudes.copy()
-        new_lons = longitudes.copy()
-        new_headings = np.zeros_like(latitudes)
-        
-        new_lats[active_mask] += move_lat[active_mask]
-        new_lons[active_mask] += move_lon[active_mask]
-        
-        # Calculate headings vectorized
-        new_headings[active_mask] = np.degrees(np.arctan2(dx[active_mask], dy[active_mask]))
-        
-        return new_lats, new_lons, new_headings, arrived_mask
-
-    @staticmethod
     def calculate_decay_batch(weights: np.ndarray, 
                              timestamps: np.ndarray, 
                              current_ts: float, 

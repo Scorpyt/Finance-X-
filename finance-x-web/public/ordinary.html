@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance-X | Ordinary Mode</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <button class="back-button" onclick="window.location.href='/'">← Back to Home</button>
+
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-title">FINANCE-X TERMINAL</div>
+            <div class="terminal-mode-badge">ORDINARY MODE</div>
+        </div>
+
+        <div class="terminal-body">
+            <div class="command-input-container">
+                <input type="text" id="commandInput" class="command-input"
+                    placeholder="Enter command (e.g., NIFTY, CHART RELIANCE, HELP)..." autocomplete="off" />
+                <button class="command-submit" onclick="executeCommand()">Execute</button>
+            </div>
+
+            <div id="terminalOutput" class="terminal-output">
+                <div class="output-line output-success">
+                    ╔═══════════════════════════════════════════════════════╗
+                    ║ ║
+                    ║ FINANCE-X ORDINARY MODE TERMINAL ║
+                    ║ ║
+                    ║ Available Commands: ║
+                    ║ • NIFTY - View NIFTY 50 stocks ║
+                    ║ • CHART [SYMBOL] - View price chart ║
+                    ║ • QUOTE [SYMBOL] - Get stock quote ║
+                    ║ • HELP - Show all commands ║
+                    ║ ║
+                    ║ Type HELP for full command list ║
+                    ║ ║
+                    ╚═══════════════════════════════════════════════════════╝
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+    <script src="/js/ordinary-terminal.js"></script>
+</body>
+
+</html>

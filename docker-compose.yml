@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  finance-x:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: finance-x-app
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount databases for persistence
+      - ./finance.db:/app/finance.db
+      - ./users.db:/app/users.db
+      # Optional: mount static files for development
+      # - ./static:/app/static
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HOST=0.0.0.0
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/status')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - finance-network
+
+networks:
+  finance-network:
+    driver: bridge

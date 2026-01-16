@@ -46,21 +46,6 @@ class Ticker:
     sector: str = "GENERAL"
 
 @dataclass
-class GeoPoint:
-    lat: float
-    lon: float
-
-@dataclass
-class Tanker:
-    id: str
-    name: str
-    location: GeoPoint
-    destination: str
-    status: str # "MOVING", "ANCHORED", "LOADING"
-    cargo_level: float # 0-100%
-    heading: float = 0.0
-
-@dataclass
 class MarketSnapshot:
     timestamp: datetime.datetime
     state: SystemState

@@ -2,7 +2,7 @@ import math
 import random
 from datetime import datetime, timedelta
 from typing import List, Dict, Tuple
-from models import MarketEvent, ProcessedEvent, SystemState, MarketSnapshot, Ticker, PricePoint, MarketRegime, Tanker, GeoPoint
+from models import MarketEvent, ProcessedEvent, SystemState, MarketSnapshot, Ticker, PricePoint, MarketRegime
 
 import numpy as np
 from performance_engine import PerformanceEngine, HardwareNavigator
@@ -56,89 +56,6 @@ class TechnicalAnalysis:
             "advice": advice,
             "bid": best_bid,
             "volatility": (upper_curr - lower_curr) / m[-1]
-        }
-
-class TankerSimulator:
-    def __init__(self):
-        self.tankers: List[Tanker] = []
-        self.nodes = {
-            "HOUSTON": GeoPoint(29.76, -95.36),
-            "ROTTERDAM": GeoPoint(51.92, 4.47),
-            "SINGAPORE": GeoPoint(1.35, 103.81),
-            "FUJAIRAH": GeoPoint(25.12, 56.32),
-            "QINGDAO": GeoPoint(36.06, 120.38),
-            "SANTOS": GeoPoint(-23.96, -46.33),
-            "RAS_TANURA": GeoPoint(26.64, 50.16)
-        }
-        self._init_fleet()
-
-    def _init_fleet(self):
-        # 30 Ships
-        prefixes = ["NORDIC", "PACIFIC", "ATLANTIC", "GULF", "ARCTIC", "AEGEAN"]
-        suffixes = ["PRIDE", "STAR", "VOYAGER", "TITAN", "STREAM", "SPIRIT", "LEADER", "DREAM"]
-        
-        for i in range(30):
-            name = f"{random.choice(prefixes)} {random.choice(suffixes)} {i+1}"
-            start_node = random.choice(list(self.nodes.keys()))
-            target_node = random.choice([k for k in self.nodes.keys() if k != start_node])
-            start_loc = self.nodes[start_node]
-            
-            # Scatter starts a bit so they aren't all ON the node
-            lat_jitter = random.uniform(-5, 5)
-            lon_jitter = random.uniform(-10, 10)
-            
-            self.tankers.append(Tanker(
-                id=f"T-{1000+i}",
-                name=name,
-                location=GeoPoint(start_loc.lat + lat_jitter, start_loc.lon + lon_jitter),
-                destination=target_node,
-                status="MOVING",
-                cargo_level=random.uniform(50, 100),
-                heading=random.uniform(0, 360)
-            ))
-
-    def update_positions(self, state: SystemState):
-        speed_factor = 1.0
-        if state == SystemState.CRASH:
-            speed_factor = 0.3 # Major disruptions
-
-        # FAST PATH: Vectorized Update
-        if len(self.tankers) > 0:
-            # Extract arrays
-            lats = np.array([t.location.lat for t in self.tankers])
-            lons = np.array([t.location.lon for t in self.tankers])
-            dest_nodes = [self.nodes[t.destination] for t in self.tankers]
-            dest_lats = np.array([n.lat for n in dest_nodes])
-            dest_lons = np.array([n.lon for n in dest_nodes])
-            statuses = np.array([1 if t.status == "MOVING" else 0 for t in self.tankers])
-            
-            # Batch Update
-            new_lats, new_lons, new_headings, arrived_mask = PerformanceEngine.batch_update_tankers(
-                lats, lons, dest_lats, dest_lons, statuses, speed_factor
-            )
-            
-            # Write back
-            for i, t in enumerate(self.tankers):
-                if t.status == "MOVING":
-                    if arrived_mask[i]:
-                        # Arrival Logic
-                        if random.random() > 0.8:
-                            t.status = "ANCHORED"
-                        else:
-                            t.destination = random.choice([k for k in self.nodes.keys() if k != t.destination])
-                    else:
-                        t.location.lat = new_lats[i]
-                        t.location.lon = new_lons[i]
-                        t.heading = float(new_headings[i])
-
-    def get_supply_metrics(self) -> Dict:
-        total = len(self.tankers)
-        moving = len([t for t in self.tankers if t.status == "MOVING"])
-        volume_at_sea = sum([t.cargo_level for t in self.tankers if t.status == "MOVING"])
-        return {
-            "total_ships": total,
-            "moving_ratio": moving / total,
-            "volume_index": volume_at_sea
         }
 
 class MarketSimulator:
@@ -208,7 +125,6 @@ class IntelligenceEngine:
         self.current_state = SystemState.STABLE
         self.current_regime = MarketRegime.LOW_VOL
         self.simulator = MarketSimulator()
-        self.tanker_sim = TankerSimulator()
         
         # Database Integration
         self.db = DatabaseManager()
@@ -264,7 +180,6 @@ class IntelligenceEngine:
             self.current_regime = MarketRegime.LOW_VOL
             
         self.simulator.update_prices(current_time, total_risk)
-        self.tanker_sim.update_positions(self.current_state)
 
         top_events = sorted(self.events, key=lambda x: x.current_weight, reverse=True)[:5]
         

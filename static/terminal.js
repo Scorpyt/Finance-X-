@@ -56,16 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Navigation buttons
     const btnOverview = document.getElementById('btnOverview');
-    const btnTankerMap = document.getElementById('btnTankerMap');
     const btnMarketMap = document.getElementById('btnMarketMap');
     const btnActions = document.getElementById('btnActions');
 
     const btnSysMarket = document.getElementById('btnSysMarket');
-    const btnSysLogistics = document.getElementById('btnSysLogistics');
+    const btnSysStudy = document.getElementById('btnSysStudy');
     const btnSysSecure = document.getElementById('btnSysSecure');
 
     function updateNavState(activeBtn) {
-        [btnSysMarket, btnSysLogistics, btnSysSecure].forEach(btn => {
+        [btnSysMarket, btnSysStudy, btnSysSecure].forEach(btn => {
             if (btn) btn.classList.remove('active-nav');
         });
         if (activeBtn) activeBtn.classList.add('active-nav');
@@ -78,10 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (btnSysLogistics) {
-        btnSysLogistics.addEventListener('click', () => {
-            updateNavState(btnSysLogistics);
-            executeCommand('TANKERS');
+    if (btnSysStudy) {
+        btnSysStudy.addEventListener('click', () => {
+            updateNavState(btnSysStudy);
+            executeCommand('STUDY');
         });
     }
 
@@ -100,36 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnOverview) {
         btnOverview.addEventListener('click', () => {
-            disableTankerAnalysisMode();
             executeCommand('OVERVIEW');
         });
     }
-
-    // Dual Map System
-    let mapMode = null; // 'TANKER' or 'MARKET'
+    // Map System
+    let mapMode = 'MARKET';
     let marketData = [];
-
-    if (btnTankerMap) {
-        btnTankerMap.addEventListener('click', async () => {
-            if (mapAssets.length === 0) {
-                console.log('[Tanker Map] Loading vessel data...');
-                await executeCommand('TANKERS');
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            mapMode = 'TANKER';
-            switchView('MAP_HD');
-
-            // Enable full-screen analysis mode
-            enableTankerAnalysisMode();
-
-            // Force map to fit container
-            setTimeout(() => {
-                if (leafletMap) leafletMap.invalidateSize();
-                renderTankerMap();
-                updateTankerRiskMetrics();
-            }, 100);
-        });
-    }
 
     if (btnMarketMap) {
         btnMarketMap.addEventListener('click', async () => {
@@ -201,93 +176,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (mode === 'MAP_HD') {
             leafletMapEl.style.display = 'block';
             if (!leafletMap) initLeafletMap();
-            document.getElementById('chartSymbol').innerText = mapMode === 'TANKER' ? 'TANKER MAP' : 'MARKET MAP';
+            document.getElementById('chartSymbol').innerText = 'MARKET MAP';
             // Destroy Locomotive Scroll when not on landing page
             destroyLocomotiveScroll();
+        } else if (mode === 'OVERVIEW_GRID' || mode === 'MAP_CANVAS') {
+            chartCanvas.style.display = 'block';
+            document.getElementById('chartSymbol').innerText = 'MARKET DASHBOARD';
+            destroyLocomotiveScroll();
         }
-    }
-
-    function updateButtonStates(mode) {
-        const buttons = {
-            'LANDING': btnOverview,
-            'MAP_HD': mapMode === 'TANKER' ? btnTankerMap : btnMarketMap
-        };
-
-        // Reset all buttons
-        [btnOverview, btnTankerMap, btnMarketMap].forEach(btn => {
-            if (btn) {
-                btn.style.background = '#111';
-                btn.style.color = '#6b7280';
-                btn.style.borderColor = '#374151';
-                btn.style.fontWeight = '400';
-            }
-        });
-
-        // Highlight active button
-        const activeBtn = buttons[mode];
-        if (activeBtn) {
-            activeBtn.style.background = '#1f2937';
-            activeBtn.style.color = '#10b981';
-            activeBtn.style.borderColor = '#10b981';
-            activeBtn.style.fontWeight = '600';
-        }
-    }
-
-    // Tanker Analysis Mode - Full Screen
-    function enableTankerAnalysisMode() {
-        // Hide terminal elements
-        const sidebar = document.querySelector('.sidebar');
-        const eventLog = document.querySelector('.event-log');
-        const detailView = document.querySelector('.detail-view');
-        const commandBar = document.querySelector('.command-bar');
-        const header = document.querySelector('.header');
-
-        if (sidebar) sidebar.style.display = 'none';
-        if (eventLog) eventLog.style.display = 'none';
-        if (detailView) detailView.style.display = 'none';
-        if (commandBar) commandBar.style.display = 'none';
-        if (header) header.style.display = 'none';
-
-        // Show analysis panel
-        const analysisPanel = document.getElementById('tankerAnalysisPanel');
-        if (analysisPanel) analysisPanel.style.display = 'block';
-
-        // Make chart area full screen
-        const chartArea = document.querySelector('.chart-area');
-        if (chartArea) {
-            chartArea.style.gridColumn = '1 / -1';
-            chartArea.style.height = '100vh';
-        }
-
-        console.log('[Tanker Analysis] Full-screen mode enabled');
-    }
-
-    function disableTankerAnalysisMode() {
-        // Show terminal elements
-        const sidebar = document.querySelector('.sidebar');
-        const eventLog = document.querySelector('.event-log');
-        const detailView = document.querySelector('.detail-view');
-        const commandBar = document.querySelector('.command-bar');
-        const header = document.querySelector('.header');
-
-        if (sidebar) sidebar.style.display = 'block';
-        if (eventLog) eventLog.style.display = 'block';
-        if (detailView) detailView.style.display = 'block';
-        if (commandBar) commandBar.style.display = 'flex';
-        if (header) header.style.display = 'flex';
-
-        // Hide analysis panel
-        const analysisPanel = document.getElementById('tankerAnalysisPanel');
-        if (analysisPanel) analysisPanel.style.display = 'none';
-
-        // Reset chart area
-        const chartArea = document.querySelector('.chart-area');
-        if (chartArea) {
-            chartArea.style.gridColumn = '';
-            chartArea.style.height = '';
-        }
-
-        console.log('[Tanker Analysis] Full-screen mode disabled');
     }
 
     // Locomotive Scroll initialization
@@ -323,6 +219,25 @@ document.addEventListener('DOMContentLoaded', () => {
             locomotiveScroll.destroy();
             locomotiveScroll = null;
             console.log('[Locomotive Scroll] Destroyed');
+        }
+    }
+
+    // Update button states based on active view mode
+    function updateButtonStates(mode) {
+        const btnOverview = document.getElementById('btnOverview');
+        const btnMarketMap = document.getElementById('btnMarketMap');
+        const btnActions = document.getElementById('btnActions');
+
+        // Reset all buttons
+        [btnOverview, btnMarketMap, btnActions].forEach(btn => {
+            if (btn) btn.classList.remove('active');
+        });
+
+        // Set active based on mode
+        if (mode === 'OVERVIEW_GRID' && btnOverview) {
+            btnOverview.classList.add('active');
+        } else if (mode === 'MAP_HD' && btnMarketMap) {
+            btnMarketMap.classList.add('active');
         }
     }
 
@@ -1396,8 +1311,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         else if (data.type === 'OVERVIEW_GRID') {
             console.log("OVERVIEW_GRID Recv:", data.grids);
-            activeMode = 'OVERVIEW_GRID';
             gridData = data.grids || [];
+            switchView('OVERVIEW_GRID');  // Show canvas before rendering
+            activeMode = 'OVERVIEW_GRID';
             document.getElementById('chartSymbol').innerText = "MARKET DASHBOARD";
             renderMainView();
             detailView.innerHTML = `
@@ -1443,6 +1359,269 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         } else {
             detailView.innerText = JSON.stringify(data, null, 2);
+        }
+
+        // === STUDY VIEWS ===
+        if (data.type === 'STUDY_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #10b981;">${data.title}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-bottom: 15px;">Last updated: ${data.last_updated}</div>
+                
+                <div style="margin-bottom: 20px;">
+                    <div style="color: #3b82f6; font-weight: 600; margin-bottom: 10px; border-bottom: 1px solid #374151; padding-bottom: 5px;">📰 LIVE NEWS</div>
+            `;
+
+            if (data.news && data.news.length > 0) {
+                data.news.forEach(item => {
+                    const sentimentColor = item.sentiment === 'BULLISH' ? '#10b981' :
+                        item.sentiment === 'BEARISH' ? '#ef4444' : '#6b7280';
+                    const impactColor = item.impact === 'HIGH' ? '#ef4444' :
+                        item.impact === 'MEDIUM' ? '#f59e0b' : '#6b7280';
+                    html += `
+                        <div style="background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <span style="color: ${sentimentColor}; font-size: 10px; font-weight: 600;">
+                                    ${item.sentiment === 'BULLISH' ? '🟢' : item.sentiment === 'BEARISH' ? '🔴' : '⚪'} ${item.sentiment}
+                                </span>
+                                <span style="color: #6b7280; font-size: 9px;">${item.source}</span>
+                            </div>
+                            <div style="color: #e5e7eb; font-size: 11px; margin: 6px 0; line-height: 1.4;">${item.title}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                <span style="color: ${impactColor}; font-size: 9px;">Impact: ${item.impact}</span>
+                                ${item.tickers.length > 0 ? `
+                                    <div style="display: flex; gap: 4px;">
+                                        ${item.tickers.map(t => `<span onclick="executeCommand('ADVISE ${t}')" style="background: #1f2937; color: #3b82f6; padding: 2px 6px; border-radius: 3px; font-size: 9px; cursor: pointer;">${t}</span>`).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="color: #6b7280; font-size: 11px;">Loading news feeds...</div>';
+            }
+
+            html += `
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <div style="color: #8b5cf6; font-weight: 600; margin-bottom: 10px; border-bottom: 1px solid #374151; padding-bottom: 5px;">📖 LEARNING RESOURCES</div>
+            `;
+
+            if (data.resources) {
+                data.resources.slice(0, 4).forEach(r => {
+                    const diffColor = r.difficulty === 'BEGINNER' ? '#10b981' :
+                        r.difficulty === 'INTERMEDIATE' ? '#f59e0b' : '#ef4444';
+                    html += `
+                        <div style="padding: 8px 0; border-bottom: 1px solid #1f2937;">
+                            <div style="color: #e5e7eb; font-size: 11px; font-weight: 500;">${r.title}</div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                                <span style="color: #6b7280; font-size: 9px;">${r.category}</span>
+                                <span style="color: ${diffColor}; font-size: 9px;">${r.difficulty}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `
+                </div>
+                <div style="background: #111827; border: 1px solid #374151; border-radius: 6px; padding: 10px; text-align: center;">
+                    <span style="color: #6b7280; font-size: 10px;">📋 ${data.glossary_count} terms in glossary</span>
+                    <span onclick="executeCommand('GLOSSARY')" style="color: #3b82f6; font-size: 10px; margin-left: 10px; cursor: pointer;">View All →</span>
+                </div>
+            `;
+
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'LEARN_VIEW') {
+            let html = `<div style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: #8b5cf6;">${data.title}</div>`;
+
+            if (data.resources && data.resources.length > 0) {
+                data.resources.forEach(r => {
+                    const diffColor = r.difficulty === 'BEGINNER' ? '#10b981' :
+                        r.difficulty === 'INTERMEDIATE' ? '#f59e0b' : '#ef4444';
+                    html += `
+                        <div style="background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 12px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #e5e7eb; font-size: 12px; font-weight: 600;">${r.title}</span>
+                                <span style="background: ${diffColor}20; color: ${diffColor}; padding: 2px 8px; border-radius: 10px; font-size: 9px;">${r.difficulty}</span>
+                            </div>
+                            <div style="color: #9ca3af; font-size: 10px; margin-top: 6px;">${r.description}</div>
+                            <div style="color: #6b7280; font-size: 9px; margin-top: 6px;">Category: ${r.category}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="color: #6b7280;">No resources found for this topic.</div>';
+            }
+
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'GLOSSARY_VIEW') {
+            let html = `<div style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: #f59e0b;">${data.title}</div>`;
+
+            if (data.terms && !data.terms.error) {
+                Object.entries(data.terms).forEach(([term, definition]) => {
+                    html += `
+                        <div style="padding: 10px 0; border-bottom: 1px solid #1f2937;">
+                            <div style="color: #10b981; font-size: 12px; font-weight: 600;">${term}</div>
+                            <div style="color: #9ca3af; font-size: 11px; margin-top: 4px; line-height: 1.4;">${definition}</div>
+                        </div>
+                    `;
+                });
+            } else if (data.terms && data.terms.error) {
+                html += `<div style="color: #ef4444;">${data.terms.error}</div>`;
+            }
+
+            detailView.innerHTML = html;
+        }
+
+        // === BLOOMBERG-STYLE VIEWS ===
+        if (data.type === 'FX_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #f59e0b;">${data.title}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-bottom: 15px;">Updated: ${data.updated}</div>
+            `;
+
+            if (data.rates && data.rates.length > 0) {
+                data.rates.forEach(r => {
+                    const color = r.direction === 'up' ? '#10b981' : '#ef4444';
+                    const arrow = r.direction === 'up' ? '▲' : '▼';
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #111827; border: 1px solid #1f2937; border-radius: 6px; margin-bottom: 6px;">
+                            <span style="color: #e5e7eb; font-weight: 600; font-size: 12px;">${r.pair}</span>
+                            <div style="text-align: right;">
+                                <span style="color: #fff; font-size: 14px; font-weight: 700; font-family: 'Roboto Mono', monospace;">${r.rate}</span>
+                                <span style="color: ${color}; font-size: 10px; margin-left: 8px;">${arrow} ${r.change_pct}%</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="color: #6b7280;">Loading FX rates...</div>';
+            }
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'SCREENER_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #3b82f6;">${data.title}</div>
+            `;
+
+            if (data.results && data.results.length > 0) {
+                html += `<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; font-size: 9px; color: #6b7280; padding: 4px 8px; border-bottom: 1px solid #1f2937;"><span>SYMBOL</span><span style="text-align:right">PRICE</span><span style="text-align:right">CHG%</span></div>`;
+                data.results.forEach(s => {
+                    const color = s.change_pct >= 0 ? '#10b981' : '#ef4444';
+                    html += `
+                        <div onclick="executeCommand('ADVISE ${s.symbol}')" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; padding: 8px; background: #111827; border: 1px solid #1f2937; border-radius: 4px; margin-bottom: 4px; cursor: pointer;">
+                            <span style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${s.symbol}</span>
+                            <span style="color: #fff; text-align: right; font-family: 'Roboto Mono'; font-size: 11px;">₹${s.price}</span>
+                            <span style="color: ${color}; text-align: right; font-size: 11px; font-weight: 600;">${s.change_pct >= 0 ? '+' : ''}${s.change_pct}%</span>
+                        </div>
+                    `;
+                });
+            }
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'MOVERS_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #10b981;">${data.title}</div>
+            `;
+
+            // Market summary
+            if (data.summary) {
+                const s = data.summary;
+                html += `
+                    <div style="background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 10px; margin-bottom: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                        <div><div style="color: #10b981; font-size: 16px; font-weight: 700;">${s.gainers}</div><div style="color: #6b7280; font-size: 9px;">GAINERS</div></div>
+                        <div><div style="color: #ef4444; font-size: 16px; font-weight: 700;">${s.losers}</div><div style="color: #6b7280; font-size: 9px;">LOSERS</div></div>
+                        <div><div style="color: ${s.market_sentiment === 'BULLISH' ? '#10b981' : '#ef4444'}; font-size: 12px; font-weight: 700;">${s.market_sentiment}</div><div style="color: #6b7280; font-size: 9px;">SENTIMENT</div></div>
+                    </div>
+                `;
+            }
+
+            // Gainers
+            html += '<div style="color: #10b981; font-weight: 600; margin-bottom: 8px; font-size: 11px;">🟢 TOP GAINERS</div>';
+            if (data.gainers) {
+                data.gainers.forEach(s => {
+                    html += `
+                        <div onclick="executeCommand('CHART ${s.symbol}')" style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(16,185,129,0.1); border-left: 2px solid #10b981; margin-bottom: 4px; cursor: pointer;">
+                            <span style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${s.symbol}</span>
+                            <span style="color: #10b981; font-size: 11px; font-weight: 600;">+${s.change_pct}%</span>
+                        </div>
+                    `;
+                });
+            }
+
+            // Losers
+            html += '<div style="color: #ef4444; font-weight: 600; margin: 12px 0 8px; font-size: 11px;">🔴 TOP LOSERS</div>';
+            if (data.losers) {
+                data.losers.forEach(s => {
+                    html += `
+                        <div onclick="executeCommand('CHART ${s.symbol}')" style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(239,68,68,0.1); border-left: 2px solid #ef4444; margin-bottom: 4px; cursor: pointer;">
+                            <span style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${s.symbol}</span>
+                            <span style="color: #ef4444; font-size: 11px; font-weight: 600;">${s.change_pct}%</span>
+                        </div>
+                    `;
+                });
+            }
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'SECTORS_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #8b5cf6;">${data.title}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-bottom: 15px;">US Sector ETFs | ${data.updated}</div>
+            `;
+
+            if (data.sectors && data.sectors.length > 0) {
+                html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">';
+                data.sectors.forEach(s => {
+                    const color = s.direction === 'up' ? '#10b981' : '#ef4444';
+                    const bgColor = s.direction === 'up' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                    html += `
+                        <div style="background: ${bgColor}; border: 1px solid ${color}40; border-radius: 6px; padding: 10px;">
+                            <div style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${s.sector}</div>
+                            <div style="color: ${color}; font-size: 16px; font-weight: 700; margin-top: 4px;">${s.change_pct >= 0 ? '+' : ''}${s.change_pct}%</div>
+                            <div style="color: #6b7280; font-size: 9px; margin-top: 2px;">${s.symbol} • $${s.price}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'CALENDAR_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #f59e0b;">${data.title}</div>
+            `;
+
+            if (data.events && data.events.length > 0) {
+                data.events.forEach(e => {
+                    const impactColor = e.impact === 'HIGH' ? '#ef4444' : e.impact === 'MEDIUM' ? '#f59e0b' : '#6b7280';
+                    const isToday = e.days_until === 0;
+                    html += `
+                        <div style="background: ${isToday ? 'rgba(245,158,11,0.15)' : '#111827'}; border: 1px solid ${isToday ? '#f59e0b' : '#1f2937'}; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <span style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${e.event}</span>
+                                <span style="background: ${impactColor}20; color: ${impactColor}; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 600;">${e.impact}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                                <span style="color: #6b7280; font-size: 10px;">📅 ${e.formatted_date} (${e.day_name}) • ${e.time}</span>
+                                <span style="color: #3b82f6; font-size: 10px;">${e.currency}</span>
+                            </div>
+                            ${isToday ? '<div style="color: #f59e0b; font-size: 9px; margin-top: 6px; font-weight: 600;">⚡ TODAY</div>' : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="color: #6b7280;">No upcoming events.</div>';
+            }
+            detailView.innerHTML = html;
         }
     }
 

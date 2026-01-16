@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance-X | Enterprise Mode</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <button class="back-button" onclick="window.location.href='/'">← Back to Home</button>
+
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-title">FINANCE-X TERMINAL</div>
+            <div class="terminal-mode-badge" style="background: linear-gradient(135deg, #3b82f6, #10b981);">ENTERPRISE
+                MODE</div>
+        </div>
+
+        <div class="terminal-body">
+            <div class="command-input-container">
+                <input type="text" id="commandInput" class="command-input"
+                    placeholder="Enter command (e.g., VOL RELIANCE, HEATMAP SECTOR, CORR)..." autocomplete="off" />
+                <button class="command-submit" style="background: linear-gradient(135deg, #3b82f6, #10b981);"
+                    onclick="executeCommand()">Execute</button>
+            </div>
+
+            <div id="terminalOutput" class="terminal-output">
+                <div class="output-line output-success">
+                    ╔═══════════════════════════════════════════════════════╗
+                    ║ ║
+                    ║ FINANCE-X ENTERPRISE MODE TERMINAL ║
+                    ║ ║
+                    ║ 🚀 PREMIUM FEATURES UNLOCKED ║
+                    ║ ║
+                    ║ Basic Commands: ║
+                    ║ • NIFTY - View NIFTY 50 stocks ║
+                    ║ • CHART [SYMBOL] - View price chart ║
+                    ║ • QUOTE [SYMBOL] - Get stock quote ║
+                    ║ ║
+                    ║ Advanced Analytics: ║
+                    ║ • VOL [SYMBOL] - Volatility analysis ║
+                    ║ • VOLSCAN - High volatility scanner ║
+                    ║ • HEATMAP [SECTOR/MARKET/VOLUME] - Heatmaps ║
+                    ║ • CORR - Correlation matrix ║
+                    ║ • FX - Foreign exchange rates ║
+                    ║ • SECTORS - Sector performance ║
+                    ║ • CALENDAR - Economic calendar ║
+                    ║ ║
+                    ║ Type HELP for full command list ║
+                    ║ ║
+                    ╚═══════════════════════════════════════════════════════╝
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+    <script src="/js/enterprise-terminal.js"></script>
+</body>
+
+</html>

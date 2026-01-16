@@ -1,0 +1,42 @@
+# Bloomberg Engine Microservice - Dockerfile
+# Lightweight container for running Bloomberg Engine API
+
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies (minimal)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy only required files
+COPY bloomberg_engine.py .
+COPY bloomberg_service.py .
+
+# Create requirements file for Bloomberg service
+RUN echo "fastapi==0.109.0" > requirements.txt && \
+    echo "uvicorn[standard]==0.27.0" >> requirements.txt && \
+    echo "yfinance==0.2.36" >> requirements.txt && \
+    echo "pandas==2.1.0" >> requirements.txt && \
+    echo "numpy==1.26.0" >> requirements.txt && \
+    echo "requests==2.31.0" >> requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose port 8001 (different from main app)
+EXPOSE 8001
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV HOST=0.0.0.0
+ENV PORT=8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8001/health')" || exit 1
+
+# Run the Bloomberg service
+CMD ["uvicorn", "bloomberg_service:app", "--host", "0.0.0.0", "--port", "8001"]
