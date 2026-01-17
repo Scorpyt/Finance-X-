@@ -32,6 +32,7 @@ Interactive React-based system architecture viewer with:
 - **Virtual IDE Simulation** - Click wires to simulate connection changes
 - Real-time security dashboard
 - Module explorer with VS Code integration
+- **Workflow Laboratory** - Simulate and analyze system workflows with impact reports
 
 ---
 
@@ -165,6 +166,8 @@ This application implements multiple security layers:
   - Virtual IDE simulation for connection changes
   - Real-time security logs dashboard
   - Module explorer with VS Code integration
+  - **Interactive Node Flows**: Visualization of data pipelines and dependencies for each module
+  - **Workflow Laboratory**: Import, export, and simulate system workflows with AI impact analysis
 
 - **Enterprise Security**
   - Cloudflare-style Zero Trust authentication
