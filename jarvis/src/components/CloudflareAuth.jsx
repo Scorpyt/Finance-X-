@@ -18,8 +18,8 @@ import {
     Users
 } from 'lucide-react';
 
-// Enterprise API endpoint
-const AUTH_API = 'http://localhost:3001/api/auth';
+// Enterprise API endpoint - uses environment variable in production, localhost for dev
+const AUTH_API = (import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001') + '/api/auth';
 
 // Cloudflare-style colors
 const cfColors = {
