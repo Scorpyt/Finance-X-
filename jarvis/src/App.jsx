@@ -243,10 +243,11 @@ const StatsDetailModal = ({ stat, onClose }) => {
 };
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-  const [userName, setUserName] = useState('');
-  const [userRole, setUserRole] = useState('');
+  // PUBLIC ACCESS ENABLED - Authentication bypassed
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [userEmail, setUserEmail] = useState('public@finance-x.com');
+  const [userName, setUserName] = useState('Guest User');
+  const [userRole, setUserRole] = useState('Visitor');
   const [activeView, setActiveView] = useState('architecture');
   const [selectedStat, setSelectedStat] = useState(null);
 
@@ -284,9 +285,12 @@ function App() {
   };
 
   // Show login if not authenticated
+  // AUTH DISABLED FOR PUBLIC ACCESS
+  /* 
   if (!isAuthenticated) {
     return <CloudflareAuth onAuthenticated={handleAuthenticated} />;
   }
+  */
 
   const navItems = [
     { id: 'architecture', name: 'Architecture', icon: Network, description: 'System Architecture Diagram' },
