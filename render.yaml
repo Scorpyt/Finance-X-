@@ -1,0 +1,38 @@
+services:
+  # Backend: Express Authentication Server
+  - type: web
+    name: jarvis-auth-server
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: jarvis
+    buildCommand: npm install
+    startCommand: npm start
+
+    envVars:
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: AUTH_PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /api/auth/status
+
+  # Frontend: React + Vite Static Site
+  - type: web
+    name: jarvis-frontend
+    runtime: static
+    region: oregon
+    plan: free
+    rootDir: jarvis
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+
+    envVars:
+      - key: VITE_AUTH_API_URL
+        fromService:
+          type: web
+          name: jarvis-auth-server
+          envVarKey: RENDER_EXTERNAL_URL
