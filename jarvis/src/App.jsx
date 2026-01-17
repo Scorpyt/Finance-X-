@@ -245,6 +245,8 @@ const StatsDetailModal = ({ stat, onClose }) => {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('');
   const [activeView, setActiveView] = useState('architecture');
   const [selectedStat, setSelectedStat] = useState(null);
 
@@ -256,6 +258,8 @@ function App() {
       if (parsed.expires && parsed.expires > Date.now()) {
         setIsAuthenticated(true);
         setUserEmail(parsed.email);
+        setUserName(parsed.name || '');
+        setUserRole(parsed.role || '');
       } else {
         localStorage.removeItem('jarvis_auth');
       }
@@ -266,12 +270,16 @@ function App() {
     const authData = JSON.parse(localStorage.getItem('jarvis_auth') || '{}');
     setIsAuthenticated(true);
     setUserEmail(authData.email);
+    setUserName(authData.name || '');
+    setUserRole(authData.role || '');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('jarvis_auth');
     setIsAuthenticated(false);
     setUserEmail('');
+    setUserName('');
+    setUserRole('');
     setActiveView('architecture');
   };
 
@@ -467,29 +475,47 @@ function App() {
         <div style={{
           margin: '0 12px 16px',
           padding: '12px',
-          background: 'rgba(34,197,94,0.1)',
+          background: userRole === 'Founder' ? 'rgba(246,130,31,0.1)' : 'rgba(34,197,94,0.1)',
           borderRadius: '8px',
-          border: '1px solid rgba(34,197,94,0.2)',
+          border: `1px solid ${userRole === 'Founder' ? 'rgba(246,130,31,0.3)' : 'rgba(34,197,94,0.2)'}`,
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
         }}>
           <div style={{
-            width: '32px',
-            height: '32px',
+            width: '36px',
+            height: '36px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #f6821f, #fbad41)',
+            background: userRole === 'Founder'
+              ? 'linear-gradient(135deg, #f6821f, #fbad41)'
+              : 'linear-gradient(135deg, #22c55e, #10b981)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            fontWeight: '600',
-            fontSize: '13px',
+            fontWeight: '700',
+            fontSize: '14px',
+            boxShadow: userRole === 'Founder' ? '0 0 12px rgba(246,130,31,0.4)' : 'none',
           }}>
-            {userEmail.charAt(0).toUpperCase()}
+            {userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase()}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '12px', fontWeight: '500', color: '#22c55e' }}>Authenticated</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                {userName || 'Team Member'}
+              </span>
+              {userRole === 'Founder' && (
+                <span style={{
+                  padding: '2px 6px',
+                  background: 'linear-gradient(135deg, #f6821f, #fbad41)',
+                  color: 'white',
+                  borderRadius: '4px',
+                  fontSize: '9px',
+                  fontWeight: '700',
+                  letterSpacing: '0.5px',
+                }}>FOUNDER</span>
+              )}
+            </div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {userEmail}
             </div>

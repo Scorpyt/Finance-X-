@@ -123,6 +123,7 @@ function CloudflareAuth({ onAuthenticated }) {
             // Store enterprise session
             localStorage.setItem('jarvis_auth', JSON.stringify({
                 email: data.user.email,
+                name: data.user.name,
                 token: data.token,
                 role: data.user.role,
                 permissions: data.user.permissions,

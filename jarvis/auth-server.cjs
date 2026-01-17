@@ -10,11 +10,14 @@ app.use(express.json());
 // ==================== ENTERPRISE SECURITY CONFIG ====================
 
 // AUTHORIZED USERS ONLY - No exceptions
-const AUTHORIZED_EMAILS = [
-    'yessmartypie880@gmail.com',
-    'mohitk6469@gmail.com',
-    'aryamannpareek@gmail.com'
+const AUTHORIZED_USERS = [
+    { email: 'yessmartypie880@gmail.com', name: 'Shreyansh Choubey', role: 'Founder' },
+    { email: 'mohitk6469@gmail.com', name: 'Mohit Singh Rajput', role: 'Team Member' },
+    { email: 'aryamannpareek@gmail.com', name: 'Aryamann Pareek', role: 'Team Member' }
 ];
+
+// Extract emails for quick lookup
+const AUTHORIZED_EMAILS = AUTHORIZED_USERS.map(u => u.email);
 
 // Current security code (rotates every hour)
 let currentSecurityCode = '';
@@ -219,6 +222,9 @@ app.post('/api/auth/verify', (req, res) => {
 
     console.log(`🎉 ACCESS GRANTED: ${normalizedEmail}`);
 
+    // Get user info
+    const userInfo = AUTHORIZED_USERS.find(u => u.email === normalizedEmail);
+
     // Generate session token
     const sessionToken = crypto.randomBytes(32).toString('hex');
 
@@ -228,7 +234,8 @@ app.post('/api/auth/verify', (req, res) => {
         token: sessionToken,
         user: {
             email: normalizedEmail,
-            role: 'enterprise_user',
+            name: userInfo?.name || 'Team Member',
+            role: userInfo?.role || 'enterprise_user',
             permissions: ['read', 'analyze', 'export']
         }
     });
