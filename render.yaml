@@ -24,7 +24,6 @@ services:
   - type: web
     name: jarvis-frontend
     runtime: static
-    region: oregon
     plan: free
     rootDir: jarvis
     buildCommand: npm install && npm run build
