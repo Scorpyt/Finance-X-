@@ -18,6 +18,17 @@ export const modules = {
         inputs: ['HTTP requests from Terminal UI', 'WebSocket connections'],
         outputs: ['JSON responses', 'Market data', 'Analysis results'],
       },
+      processFlow: {
+        steps: [
+          'Receive HTTP/WebSocket Request',
+          'Authenticate Session (Auth Middleware)',
+          'Parse Command & Parameters',
+          'Route to Appropriate Engine (e.g., Engine, India, Study)',
+          'Format Response JSON',
+          'Send back to Client'
+        ],
+        impact: 'Failure here blocks ALL external access to the system.'
+      },
       commands: ['TODAY', 'NIFTY', 'FX', 'SECTORS', 'MOVERS', 'STUDY', 'CHART', 'EVAL'],
       framework: 'FastAPI',
       port: 8000,
@@ -83,6 +94,16 @@ export const modules = {
         inputs: ['Market events', 'Time progression', 'Price updates'],
         outputs: ['System state (STABLE/HIGH_VOL/CRASH)', 'Risk scores', 'Ticker data'],
       },
+      processFlow: {
+        steps: [
+          'Ingest Market Event (Price change, News)',
+          'Calculate Decay Factors (Time-based)',
+          'Update Risk Scores per Asset',
+          'Determine System State (Normal vs Crash)',
+          'Trigger Alerts if Thresholds Breached'
+        ],
+        impact: 'Incorrect risk scores leading to false alerts or missed crash detection.'
+      },
       algorithms: [
         'Exponential decay: weight = score × e^(-rate × time)',
         'Risk classification: >25 = CRASH, >15 = HIGH_VOL, <15 = STABLE',
@@ -105,6 +126,16 @@ export const modules = {
         inputs: ['yfinance API calls', 'Stock symbols'],
         outputs: ['Market snapshot', 'Stock analysis', 'Portfolio health alerts'],
       },
+      processFlow: {
+        steps: [
+          'Grid Fetch 50 NIFTY Tickers (Batch)',
+          'Calculate Technicals (SMA, RSI)',
+          'Detect Outliers (>2% move)',
+          'Compare against Watchlist',
+          'Push Updates to Frontend'
+        ],
+        impact: 'Loss of real-time Indian market data visibility.'
+      },
       cacheStrategy: '60-second TTL cache to prevent API overload',
       trackedStocks: 49,
       features: ['SMA-5/SMA-20 calculation', 'Trend detection', 'Volume analysis', 'Stop-loss monitoring'],
@@ -124,6 +155,16 @@ export const modules = {
         inputs: ['yfinance API for FX and sectors', 'Screening criteria'],
         outputs: ['8 FX pairs', '10 sector ETFs', 'Screened stocks', 'Economic events'],
       },
+      processFlow: {
+        steps: [
+          'Fetch FX Rates (USD/INR, EUR/USD)',
+          'Aggregate Sector Performance',
+          'Run Screener Logic (Gainers/Losers)',
+          'Format Economic Calendar Events',
+          'Cache Results (5min TTL)'
+        ],
+        impact: 'Loss of global context and sector rotation analysis.'
+      },
       fxPairs: ['USD/INR', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/INR', 'GBP/INR', 'BTC/USD', 'ETH/USD'],
       sectorETFs: ['XLK', 'XLF', 'XLE', 'XLV', 'XLI', 'XLY', 'XLU', 'XLRE', 'XLB', 'XLC'],
       screenerCriteria: ['GAINERS', 'LOSERS', 'VOLUME', 'VOLATILE'],
@@ -142,6 +183,16 @@ export const modules = {
       dataFlow: {
         inputs: ['RSS feeds from Yahoo Finance, MarketWatch, Reuters, Bloomberg'],
         outputs: ['Analyzed news with sentiment', 'Study resources', 'Glossary terms'],
+      },
+      processFlow: {
+        steps: [
+          'Poll RSS Feeds (Yahoo, Reuters)',
+          'Parse XML Content',
+          'Run Keyword Sentiment Analysis',
+          'Tag with Tickers/Sectors',
+          'Store in Database & Feed'
+        ],
+        impact: 'News feed stays stale; no sentiment correlation.'
       },
       newsSources: ['Yahoo Finance RSS', 'MarketWatch RSS', 'Reuters Business RSS', 'Bloomberg Markets RSS'],
       sentimentTypes: ['BULLISH', 'BEARISH', 'NEUTRAL'],

@@ -46,6 +46,7 @@ import {
     Info
 } from 'lucide-react';
 import { modules, getModuleById, getAllModules } from '../data/architecture';
+import NodeDetailsPanel from './NodeDetailsPanel';
 import 'reactflow/dist/style.css';
 
 // ==================== VIRTUAL IDE SIMULATION ENGINE ====================
@@ -905,75 +906,17 @@ function ArchitectureDiagramInner() {
                 )}
             </AnimatePresence>
 
-            {/* Module Info Panel - same as before but shortened */}
+            {/* Module Info Panel - NEW Interactive Panel */}
             <AnimatePresence>
                 {selectedModule && (
-                    <motion.div
-                        initial={{ opacity: 0, x: 50, scale: 0.95 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: 50, scale: 0.95 }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        style={{
-                            width: '420px',
-                            maxHeight: 'calc(100vh - 140px)',
-                            background: 'var(--bg-secondary)',
-                            borderRadius: '16px',
-                            border: '1px solid var(--border-color)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-                        }}
-                    >
-                        <div style={{ padding: '20px', background: `linear-gradient(135deg, ${typeColor}15, ${typeColor}05)`, borderBottom: `1px solid ${typeColor}30` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                                <div>
-                                    <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <FileCode size={20} style={{ color: typeColor }} />
-                                        {selectedModule.name}
-                                    </h3>
-                                    <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '4px', background: `${typeColor}20`, color: typeColor, fontWeight: '600' }}>
-                                        {selectedModule.type?.toUpperCase()}
-                                    </span>
-                                </div>
-                                <button onClick={() => setSelectedModule(null)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-muted)', padding: '8px' }}>
-                                    <X size={16} />
-                                </button>
-                            </div>
-                        </div>
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-                            {selectedModule.purpose && (
-                                <InfoSection title="PURPOSE" icon={Zap}>
-                                    <p style={{ color: 'var(--text-primary)', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{selectedModule.purpose}</p>
-                                </InfoSection>
-                            )}
-                            <InfoSection title="DESCRIPTION" icon={FileCode}>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{selectedModule.description}</p>
-                            </InfoSection>
-                            {selectedModule.dependencies && (
-                                <InfoSection title="DEPENDENCIES" icon={Link2}>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                                        {selectedModule.dependencies.map((dep) => (
-                                            <span key={dep} onClick={() => { const depModule = getModuleById(dep); if (depModule) setSelectedModule(depModule); }} style={{ display: 'inline-block', padding: '4px 10px', background: 'var(--bg-tertiary)', color: 'var(--accent-cyan)', borderRadius: '4px', fontSize: '11px', fontFamily: 'monospace', marginRight: '6px', marginBottom: '6px', cursor: 'pointer' }}>
-                                                {dep}.py →
-                                            </span>
-                                        ))}
-                                    </div>
-                                </InfoSection>
-                            )}
-                        </div>
-                        {selectedModule.path && (
-                            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-tertiary)' }}>
-                                <button onClick={() => openInEditor(selectedModule.path)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: `linear-gradient(135deg, ${typeColor}, ${typeColor}cc)`, border: 'none', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
-                                    <ExternalLink size={16} />
-                                    Open in VS Code
-                                </button>
-                            </div>
-                        )}
-                    </motion.div>
+                    <NodeDetailsPanel
+                        node={selectedModule}
+                        onClose={() => setSelectedModule(null)}
+                    />
                 )}
             </AnimatePresence>
         </div>
+
     );
 }
 
