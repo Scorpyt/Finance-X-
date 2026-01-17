@@ -21,10 +21,8 @@ services:
     healthCheckPath: /api/auth/status
 
   # Frontend: React + Vite Static Site
-  - type: web
+  - type: static
     name: jarvis-frontend
-    runtime: static
-    plan: free
     rootDir: jarvis
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
