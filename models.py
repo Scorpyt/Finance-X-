@@ -45,55 +45,6 @@ class Ticker:
     history: List[PricePoint] = field(default_factory=list)
     sector: str = "GENERAL"
 
-class StudyCategory(Enum):
-    INVESTMENT_BANKING = "investment_banking"
-    PRIVATE_EQUITY = "private_equity"
-    HEDGE_FUNDS = "hedge_funds"
-    ASSET_MANAGEMENT = "asset_management"
-    FINANCIAL_ANALYSIS = "financial_analysis"
-
-class QuestionDifficulty(Enum):
-    BEGINNER = "beginner"
-    INTERMEDIATE = "intermediate"
-    ADVANCED = "advanced"
-
-@dataclass
-class InterviewQuestion:
-    id: str
-    category: StudyCategory
-    difficulty: QuestionDifficulty
-    question: str
-    answer: str
-    explanation: str
-    uses_market_data: bool = False
-    related_topics: List[str] = field(default_factory=list)
-
-@dataclass
-class StudyTopic:
-    id: str
-    name: str
-    category: StudyCategory
-    description: str
-    questions_count: int
-    resources: List[str] = field(default_factory=list)
-
-@dataclass
-class StudyProgress:
-    topic_id: str
-    questions_answered: int
-    correct_answers: int
-    last_accessed: datetime.datetime = None
-
-@dataclass
-class MarketScenario:
-    id: str
-    title: str
-    description: str
-    challenge: str
-    market_context: Dict = field(default_factory=dict)
-    hints: List[str] = field(default_factory=list)
-    solution_approach: str = ""
-
 @dataclass
 class MarketSnapshot:
     timestamp: datetime.datetime

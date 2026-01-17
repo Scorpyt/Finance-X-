@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeMode = 'LANDING'; // 'LANDING', 'CHART', 'MAP_CANVAS', 'MAP_HD'
     let activeSymbol = 'SPX';
     let chartData = [];
+    let gridData = [];
     let chartBands = null;
     let mapAssets = [];
     let mapTitle = "GLOBAL ASSET MAP";
@@ -32,21 +33,77 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeChart();
     window.addEventListener('resize', resizeChart);
 
-    // Polling Loop
-    setInterval(updateMarketData, 10000);
-    setInterval(updateSystemState, 15000);
-    setInterval(updateLandingPage, 30000); // Update landing every 30s
+    // AUTO-STARTUP SEQUENCE
+    console.log("🚀 BOOT SEQUENCE INITIATED...");
+    setTimeout(() => {
+        executeCommand('CHART SPX'); // Show Chart immediately
+        executeCommand('risks');     // Update risk display
+        executeCommand('news');      // Populate log
+    }, 500);
+
+    // Polling Loop - AGGRESSIVE REAL-TIME UPDATES
+    setInterval(updateMarketData, 2000); // 2s polling for price updates
+    setInterval(updateSystemState, 5000); // 5s for risk updates
+    setInterval(() => {
+        if (activeMode === 'CHART') {
+            executeCommand(`CHART ${activeSymbol}`); // Auto-refresh active chart
+        }
+    }, 5000);
+
     updateMarketData();
     updateSystemState();
     updateLandingPage(); // Load landing page data on init
 
     // Navigation buttons
     const btnOverview = document.getElementById('btnOverview');
+<<<<<<< HEAD
     const btnStudyInsights = document.getElementById('btnStudyInsights');
+=======
+>>>>>>> 610f34b366cb9c18cdfcc8c18db4cc3a5970ec1e
     const btnMarketMap = document.getElementById('btnMarketMap');
+    const btnActions = document.getElementById('btnActions');
+
+    const btnSysMarket = document.getElementById('btnSysMarket');
+    const btnSysStudy = document.getElementById('btnSysStudy');
+    const btnSysSecure = document.getElementById('btnSysSecure');
+
+    function updateNavState(activeBtn) {
+        [btnSysMarket, btnSysStudy, btnSysSecure].forEach(btn => {
+            if (btn) btn.classList.remove('active-nav');
+        });
+        if (activeBtn) activeBtn.classList.add('active-nav');
+    }
+
+    if (btnSysMarket) {
+        btnSysMarket.addEventListener('click', () => {
+            updateNavState(btnSysMarket);
+            executeCommand('NIFTY');
+        });
+    }
+
+    if (btnSysStudy) {
+        btnSysStudy.addEventListener('click', () => {
+            updateNavState(btnSysStudy);
+            executeCommand('STUDY');
+        });
+    }
+
+    if (btnSysSecure) {
+        btnSysSecure.addEventListener('click', () => {
+            updateNavState(btnSysSecure);
+            executeCommand('DISRUPTION');
+        });
+    }
+
+    if (btnActions) {
+        btnActions.addEventListener('click', () => {
+            executeCommand('HELP');
+        });
+    }
 
     if (btnOverview) {
         btnOverview.addEventListener('click', () => {
+<<<<<<< HEAD
             switchView('LANDING');
 
             // Scroll landing page to top
@@ -57,13 +114,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Always fetch fresh landing page data
             updateLandingPage();
+=======
+            executeCommand('OVERVIEW');
+>>>>>>> 610f34b366cb9c18cdfcc8c18db4cc3a5970ec1e
         });
     }
-
-    // Dual Map System
-    let mapMode = null; // 'TANKER' or 'MARKET'
+    // Map System
+    let mapMode = 'MARKET';
     let marketData = [];
 
+<<<<<<< HEAD
     // Study Insights Button
     if (btnStudyInsights) {
         btnStudyInsights.addEventListener('click', async () => {
@@ -73,6 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+=======
+>>>>>>> 610f34b366cb9c18cdfcc8c18db4cc3a5970ec1e
     if (btnMarketMap) {
         btnMarketMap.addEventListener('click', async () => {
             console.log('[Market Map] Loading market data...');
@@ -148,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('chartSymbol').innerText = 'MARKET MAP';
             // Destroy Locomotive Scroll when not on landing page
             destroyLocomotiveScroll();
+<<<<<<< HEAD
         } else if (mode === 'STUDY') {
             if (studyView) studyView.style.display = 'block';
             document.getElementById('chartSymbol').innerText = 'STUDY INSIGHTS';
@@ -240,6 +303,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[Tanker Analysis] Full-screen mode disabled');
     }
 
+=======
+        } else if (mode === 'OVERVIEW_GRID' || mode === 'MAP_CANVAS') {
+            chartCanvas.style.display = 'block';
+            document.getElementById('chartSymbol').innerText = 'MARKET DASHBOARD';
+            destroyLocomotiveScroll();
+        }
+    }
+
+>>>>>>> 610f34b366cb9c18cdfcc8c18db4cc3a5970ec1e
     // Locomotive Scroll initialization
     function initLocomotiveScroll() {
         // Destroy existing instance if any
@@ -276,6 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+<<<<<<< HEAD
     function initStudyLocomotiveScroll() {
         // Destroy existing instance if any
         if (locomotiveScroll) {
@@ -300,6 +373,24 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             console.log('[Locomotive Scroll] Initialized for Study View');
+=======
+    // Update button states based on active view mode
+    function updateButtonStates(mode) {
+        const btnOverview = document.getElementById('btnOverview');
+        const btnMarketMap = document.getElementById('btnMarketMap');
+        const btnActions = document.getElementById('btnActions');
+
+        // Reset all buttons
+        [btnOverview, btnMarketMap, btnActions].forEach(btn => {
+            if (btn) btn.classList.remove('active');
+        });
+
+        // Set active based on mode
+        if (mode === 'OVERVIEW_GRID' && btnOverview) {
+            btnOverview.classList.add('active');
+        } else if (mode === 'MAP_HD' && btnMarketMap) {
+            btnMarketMap.classList.add('active');
+>>>>>>> 610f34b366cb9c18cdfcc8c18db4cc3a5970ec1e
         }
     }
 
@@ -626,15 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Landing page data fetching and rendering
     async function updateLandingPage() {
-        try {
-            const res = await fetch('/api/v2/landing');
-            landingData = await res.json();
-            if (activeMode === 'LANDING') {
-                renderLandingPage();
-            }
-        } catch (err) {
-            console.error('Error loading landing page:', err);
-        }
+        // Legacy: API removed.
     }
 
     function renderLandingPage() {
@@ -1399,12 +1482,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Command Input
+    // Command Input History
+    let cmdHistory = [];
+    let historyIndex = -1;
+
     cmdInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
             const command = cmdInput.value;
             cmdInput.value = '';
+            historyIndex = -1; // Reset
+
             if (command.trim() === '') return;
+
+            // Add to history if unique/new
+            if (cmdHistory[0] !== command) {
+                cmdHistory.unshift(command);
+            }
+            if (cmdHistory.length > 50) cmdHistory.pop();
+
             await executeCommand(command);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (historyIndex < cmdHistory.length - 1) {
+                historyIndex++;
+                cmdInput.value = cmdHistory[historyIndex];
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIndex > 0) {
+                historyIndex--;
+                cmdInput.value = cmdHistory[historyIndex];
+            } else {
+                historyIndex = -1;
+                cmdInput.value = '';
+            }
         }
     });
 
@@ -1418,6 +1529,102 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeMode === 'CHART') drawChart();
         if (activeMode === 'MAP_CANVAS') drawMap();
         if (activeMode === 'MAP_HD') renderHDMap();
+        if (activeMode === 'OVERVIEW_GRID') renderOverviewGrid();
+    }
+
+    let gridPage = 0;
+    const ITEMS_PER_PAGE = 9;
+
+    function renderOverviewGrid() {
+        if (!gridData || gridData.length === 0) return;
+        const w = mainChart.width;
+        const h = mainChart.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Pagination Controls
+        const totalPages = Math.ceil(gridData.length / ITEMS_PER_PAGE);
+        const controls = document.getElementById('gridControls');
+        const pageNum = document.getElementById('gridPageNum');
+
+        if (controls) {
+            controls.style.display = 'flex';
+            pageNum.innerText = `PAGE ${gridPage + 1}/${totalPages}`;
+        }
+
+        const start = gridPage * ITEMS_PER_PAGE;
+        const viewData = gridData.slice(start, start + ITEMS_PER_PAGE);
+
+        const rows = 3;
+        const cols = 3;
+        const cellW = w / cols;
+        const cellH = h / rows;
+
+        ctx.font = 'bold 12px Inconsolata';
+        ctx.lineWidth = 1.5;
+
+        viewData.forEach((item, index) => {
+            const r = Math.floor(index / cols);
+            const c = index % cols;
+
+            const x = c * cellW;
+            const y = r * cellH;
+            const pad = 15;
+            const chartW = cellW - 2 * pad;
+            const chartH = cellH * 0.5; // Chart takes 50% height
+            const chartX = x + pad;
+            const chartY = y + cellH * 0.4; // Start chart 40% down
+
+            // Draw Box Border
+            ctx.strokeStyle = '#222';
+            ctx.strokeRect(x, y, cellW, cellH);
+
+            // Header Background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.fillRect(x, y, cellW, 30);
+
+            // Title
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'left';
+            ctx.fillText(item.symbol, x + pad, y + 20);
+
+            // Price
+            const color = item.change >= 0 ? '#10b981' : '#ef4444';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'right';
+            ctx.fillText(`${item.price.toFixed(2)}`, x + cellW - pad, y + 20);
+
+            // Change
+            ctx.font = '10px Inconsolata';
+            ctx.fillText(`${item.change > 0 ? '+' : ''}${item.change}%`, x + cellW - pad, y + cellH - 10);
+            ctx.font = 'bold 12px Inconsolata';
+
+            // Chart
+            const prices = (item.history && item.history.map(p => p.p)) || [];
+            if (prices.length > 1) {
+                const min = Math.min(...prices);
+                const max = Math.max(...prices);
+                const range = max - min || 1;
+
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                prices.forEach((p, i) => {
+                    const cx = chartX + (i / (prices.length - 1)) * chartW;
+                    const cy = (chartY + chartH) - ((p - min) / range * chartH);
+                    if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+                });
+                ctx.stroke();
+
+                // Gradient fill
+                const grad = ctx.createLinearGradient(0, chartY, 0, chartY + chartH);
+                grad.addColorStop(0, color === '#10b981' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)');
+                grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.lineTo(chartX + chartW, chartY + chartH);
+                ctx.lineTo(chartX, chartY + chartH);
+                ctx.closePath();
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }
+        });
     }
 
     async function updateMarketData() {
@@ -1449,6 +1656,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             document.getElementById('regimeDisplay').innerText = `REGIME: ${data.regime}`;
             document.getElementById('riskDisplay').innerText = `RISK: ${data.risk}`;
+
+            // Hardware Diagnostics
+            try {
+                const diagRes = await fetch('/system/diagnostics');
+                const diag = await diagRes.json();
+                const cpuEl = document.getElementById('cpu-stat');
+                cpuEl.innerText = `CPU: ${diag.cpu_percent}% [${diag.acceleration_mode}]`;
+
+                // Color code load
+                if (diag.cpu_percent > 80) cpuEl.style.color = '#ef4444';
+                else if (diag.cpu_percent > 50) cpuEl.style.color = '#f59e0b';
+                else cpuEl.style.color = '#10b981';
+            } catch (dErr) { console.warn(dErr); }
 
             // Fetch Log - wrapped in try-catch to prevent errors
             try {
@@ -1490,22 +1710,142 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { }
     }
 
-    async function executeCommand(cmd) {
+    // Auth State
+    let sessionToken = null;
+
+    // Navigation History
+    let navHistory = [];
+    let currentNavCmd = "OVERVIEW";
+    const btnBack = document.getElementById('btnBack');
+
+    if (btnBack) {
+        btnBack.addEventListener('click', goBack);
+    }
+
+    if (document.getElementById('btnGridNext')) {
+        document.getElementById('btnGridNext').addEventListener('click', () => {
+            const totalPages = Math.ceil((gridData?.length || 0) / ITEMS_PER_PAGE);
+            if (gridPage < totalPages - 1) {
+                gridPage++;
+                renderOverviewGrid();
+            }
+        });
+    }
+
+    if (document.getElementById('btnGridPrev')) {
+        document.getElementById('btnGridPrev').addEventListener('click', () => {
+            if (gridPage > 0) {
+                gridPage--;
+                renderOverviewGrid();
+            }
+        });
+    }
+
+    function isNavCommand(cmd) {
+        if (!cmd) return false;
+        const c = cmd.toUpperCase();
+        // Commands that represent a "Page"
+        const prefixes = ['OVERVIEW', 'TANKER', 'MAP', 'CHART', 'QUOTE', 'SCAN', 'RISK', 'ADVISE', 'NEWS', 'TODAY', 'MEMORY', 'DISRUPTION', 'AUTH', 'SQL', 'NIFTY'];
+        return prefixes.some(p => c.startsWith(p));
+    }
+
+    function goBack() {
+        if (navHistory.length === 0) return;
+        const prev = navHistory.pop();
+        currentNavCmd = prev;
+        executeCommand(prev, true);
+
+        if (navHistory.length === 0 && btnBack) btnBack.style.display = 'none';
+
+        // Sync Nav Bar
+        if (window.updateNavState) {
+            if (prev.startsWith('OVERVIEW') || prev === 'NIFTY') window.updateNavState(document.getElementById('btnSysMarket'));
+            else if (prev.includes('TANKER')) window.updateNavState(document.getElementById('btnSysLogistics'));
+            else if (prev.includes('SCAN') || prev.includes('AUTH') || prev.includes('SQL') || prev === 'DISRUPTION') window.updateNavState(document.getElementById('btnSysSecure'));
+            else window.updateNavState(null);
+        }
+    }
+
+    async function executeCommand(cmd, isBack = false) {
+        if (!cmd) return;
+
+        if (cmd === 'DEBUG') {
+            alert(`Grid Data Items: ${gridData ? gridData.length : 'NULL'}`);
+            if (gridData && gridData.length > 0) {
+                alert(`Sample: ${JSON.stringify(gridData[0])}`);
+                // Draw Red Box
+                const w = mainChart.width;
+                const h = mainChart.height;
+                ctx.fillStyle = 'red';
+                ctx.fillRect(w / 2 - 50, h / 2 - 50, 100, 100);
+                ctx.fillStyle = 'white';
+                ctx.fillText("CANVAS ALIVE", w / 2 - 40, h / 2);
+            } else {
+                alert("NO DATA to render.");
+            }
+            return;
+        }
+
+        // Handle History
+        if (!isBack && isNavCommand(cmd)) {
+            // Only push if different from current
+            if (cmd.toUpperCase() !== currentNavCmd.toUpperCase()) {
+                navHistory.push(currentNavCmd);
+                currentNavCmd = cmd;
+                if (btnBack) btnBack.style.display = 'block';
+
+                // Reset Grid Page on new view
+                if (!isBack && cmd === 'NIFTY') gridPage = 0;
+
+                // Sync Nav Bar (Forward) is handled by button clicks usually, but direct commands need sync
+                if (window.updateNavState) {
+                    if (cmd.startsWith('OVERVIEW') || cmd === 'NIFTY') window.updateNavState(document.getElementById('btnSysMarket'));
+                    else if (cmd.includes('TANKER')) window.updateNavState(document.getElementById('btnSysLogistics'));
+                    else if (cmd.includes('SCAN') || cmd.includes('AUTH') || cmd === 'DISRUPTION') window.updateNavState(document.getElementById('btnSysSecure'));
+                    else window.updateNavState(null);
+                }
+            }
+        }
+
         detailView.innerHTML = "PROCESSING...";
         try {
             const res = await fetch('/command', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': sessionToken || ''
+                },
                 body: JSON.stringify({ command: cmd })
             });
             const data = await res.json();
             handleResponse(data);
         } catch (err) {
-            detailView.innerText = "ERROR";
+            console.error(err);
         }
     }
 
     function handleResponse(data) {
+        if (data.type === 'AUTH_SUCCESS') {
+            sessionToken = data.token;
+            detailView.innerHTML = `
+            <div style="border: 2px solid #10b981; padding: 10px; color: #10b981; font-family:'Roboto Mono'">
+                <div style="font-weight:bold">${data.title}</div>
+                <div>${data.content}</div>
+                <div style="font-size:10px; margin-top:5px; opacity:0.8">TOKEN: ${data.token.substring(0, 8)}...</div>
+            </div>`;
+            return;
+        }
+
+        if (data.type === 'ERROR') {
+            const color = '#ef4444';
+            detailView.innerHTML = `
+            <div style="border-left: 2px solid ${color}; padding-left: 10px; color: #e0e0e0;">
+                <div style="color:${color}; font-weight:bold">ERROR</div>
+                <div>${data.content}</div>
+            </div>`;
+            return;
+        }
+
         if (data.type === 'QUOTE' || data.type === 'CHART_FULL') {
             activeMode = 'CHART';
             activeSymbol = data.symbol;
@@ -1525,28 +1865,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         else if (data.type === 'MAP_DATA') {
             if (data.map_mode === 'MARKET') {
-                // Market map data
+                // ... (existing market map logic)
                 marketData = data.markets || [];
-                document.getElementById('chartSymbol').innerText = "MARKET MAP";
-                detailView.innerHTML = `
-                <div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>
-                TRACKING: ${marketData.length} GLOBAL MARKETS<br>
-                CLICK COUNTRY CARD → LOAD MARKET DATA<br>
-                <div style="margin-top:10px;color:#888;">Markets: USA, UK, Germany, Japan, China, India, Brazil</div>`;
+                // ...
             } else {
-                // Tanker map data
+                // ... (existing tanker map logic)
                 activeMode = 'MAP_CANVAS';
                 mapAssets = data.assets || [];
                 mapTitle = data.title;
                 if (data.metrics) mapTitle += ` [${data.metrics}]`;
                 document.getElementById('chartSymbol').innerText = "ASSET MAP";
                 renderMainView();
-                detailView.innerHTML = `
-                <div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>
-                STATUS: ACTIVE MONITORING<br>
-                FLEET: ${mapAssets.length} VESSELS<br>
-                LOGIC: SUPPLY CHAIN MONITORING ENABLED`;
+                // ...
             }
+        }
+        else if (data.type === 'OVERVIEW_GRID') {
+            console.log("OVERVIEW_GRID Recv:", data.grids);
+            gridData = data.grids || [];
+            switchView('OVERVIEW_GRID');  // Show canvas before rendering
+            activeMode = 'OVERVIEW_GRID';
+            document.getElementById('chartSymbol').innerText = "MARKET DASHBOARD";
+            renderMainView();
+            detailView.innerHTML = `
+                <div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>
+                VIEW: MULTI-ASSET OVERVIEW<br>
+                TRACKING: ${gridData.length} KEY INDICATORS<br>
+                CPU OPTIMIZATION: ACTIVE`;
         }
         else if (data.type === 'NEWS_FEED') {
             let html = `<div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>`;
@@ -1556,6 +1900,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span style="color:#00aaff">${item.source} ${item.time}</span><br>
                     ${item.headline} <span style="color:#ff3300">[IMPACT: ${item.impact}]</span>
                 </div>`;
+            });
+            detailView.innerHTML = html;
+        }
+        else if (data.type === 'HELP_MENU') {
+            let html = `<div style="font-size: 14px; font-weight:bold; margin-bottom:10px">${data.title}</div>`;
+            data.sections.forEach(sec => {
+                html += `<div style="margin-bottom:8px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 4px;">${sec.category}</div>`;
+                sec.cmds.forEach(cmd => {
+                    const parts = cmd.split(' ');
+                    const main = parts[0];
+                    const desc = parts.slice(1).join(' ');
+                    html += `
+                    <div class="cmd-item" onclick="cmdInput.value='${main} '; cmdInput.focus();" style="cursor:pointer; margin-bottom:4px; font-family:'Roboto Mono'; font-size:11px;">
+                        <span style="color:#00e5ff; font-weight:bold;">${main}</span> <span style="color:#888;">${desc}</span>
+                    </div>`;
+                });
+                html += `<div style="height:8px"></div>`;
             });
             detailView.innerHTML = html;
         }
@@ -1591,10 +1952,274 @@ document.addEventListener('DOMContentLoaded', () => {
         else {
             detailView.innerText = JSON.stringify(data, null, 2);
         }
+
+        // === STUDY VIEWS ===
+        if (data.type === 'STUDY_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #10b981;">${data.title}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-bottom: 15px;">Last updated: ${data.last_updated}</div>
+                
+                <div style="margin-bottom: 20px;">
+                    <div style="color: #3b82f6; font-weight: 600; margin-bottom: 10px; border-bottom: 1px solid #374151; padding-bottom: 5px;">📰 LIVE NEWS</div>
+            `;
+
+            if (data.news && data.news.length > 0) {
+                data.news.forEach(item => {
+                    const sentimentColor = item.sentiment === 'BULLISH' ? '#10b981' :
+                        item.sentiment === 'BEARISH' ? '#ef4444' : '#6b7280';
+                    const impactColor = item.impact === 'HIGH' ? '#ef4444' :
+                        item.impact === 'MEDIUM' ? '#f59e0b' : '#6b7280';
+                    html += `
+                        <div style="background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <span style="color: ${sentimentColor}; font-size: 10px; font-weight: 600;">
+                                    ${item.sentiment === 'BULLISH' ? '🟢' : item.sentiment === 'BEARISH' ? '🔴' : '⚪'} ${item.sentiment}
+                                </span>
+                                <span style="color: #6b7280; font-size: 9px;">${item.source}</span>
+                            </div>
+                            <div style="color: #e5e7eb; font-size: 11px; margin: 6px 0; line-height: 1.4;">${item.title}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                <span style="color: ${impactColor}; font-size: 9px;">Impact: ${item.impact}</span>
+                                ${item.tickers.length > 0 ? `
+                                    <div style="display: flex; gap: 4px;">
+                                        ${item.tickers.map(t => `<span onclick="executeCommand('ADVISE ${t}')" style="background: #1f2937; color: #3b82f6; padding: 2px 6px; border-radius: 3px; font-size: 9px; cursor: pointer;">${t}</span>`).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="color: #6b7280; font-size: 11px;">Loading news feeds...</div>';
+            }
+
+            html += `
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <div style="color: #8b5cf6; font-weight: 600; margin-bottom: 10px; border-bottom: 1px solid #374151; padding-bottom: 5px;">📖 LEARNING RESOURCES</div>
+            `;
+
+            if (data.resources) {
+                data.resources.slice(0, 4).forEach(r => {
+                    const diffColor = r.difficulty === 'BEGINNER' ? '#10b981' :
+                        r.difficulty === 'INTERMEDIATE' ? '#f59e0b' : '#ef4444';
+                    html += `
+                        <div style="padding: 8px 0; border-bottom: 1px solid #1f2937;">
+                            <div style="color: #e5e7eb; font-size: 11px; font-weight: 500;">${r.title}</div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                                <span style="color: #6b7280; font-size: 9px;">${r.category}</span>
+                                <span style="color: ${diffColor}; font-size: 9px;">${r.difficulty}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `
+                </div>
+                <div style="background: #111827; border: 1px solid #374151; border-radius: 6px; padding: 10px; text-align: center;">
+                    <span style="color: #6b7280; font-size: 10px;">📋 ${data.glossary_count} terms in glossary</span>
+                    <span onclick="executeCommand('GLOSSARY')" style="color: #3b82f6; font-size: 10px; margin-left: 10px; cursor: pointer;">View All →</span>
+                </div>
+            `;
+
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'LEARN_VIEW') {
+            let html = `<div style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: #8b5cf6;">${data.title}</div>`;
+
+            if (data.resources && data.resources.length > 0) {
+                data.resources.forEach(r => {
+                    const diffColor = r.difficulty === 'BEGINNER' ? '#10b981' :
+                        r.difficulty === 'INTERMEDIATE' ? '#f59e0b' : '#ef4444';
+                    html += `
+                        <div style="background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 12px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #e5e7eb; font-size: 12px; font-weight: 600;">${r.title}</span>
+                                <span style="background: ${diffColor}20; color: ${diffColor}; padding: 2px 8px; border-radius: 10px; font-size: 9px;">${r.difficulty}</span>
+                            </div>
+                            <div style="color: #9ca3af; font-size: 10px; margin-top: 6px;">${r.description}</div>
+                            <div style="color: #6b7280; font-size: 9px; margin-top: 6px;">Category: ${r.category}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="color: #6b7280;">No resources found for this topic.</div>';
+            }
+
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'GLOSSARY_VIEW') {
+            let html = `<div style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: #f59e0b;">${data.title}</div>`;
+
+            if (data.terms && !data.terms.error) {
+                Object.entries(data.terms).forEach(([term, definition]) => {
+                    html += `
+                        <div style="padding: 10px 0; border-bottom: 1px solid #1f2937;">
+                            <div style="color: #10b981; font-size: 12px; font-weight: 600;">${term}</div>
+                            <div style="color: #9ca3af; font-size: 11px; margin-top: 4px; line-height: 1.4;">${definition}</div>
+                        </div>
+                    `;
+                });
+            } else if (data.terms && data.terms.error) {
+                html += `<div style="color: #ef4444;">${data.terms.error}</div>`;
+            }
+
+            detailView.innerHTML = html;
+        }
+
+        // === BLOOMBERG-STYLE VIEWS ===
+        if (data.type === 'FX_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #f59e0b;">${data.title}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-bottom: 15px;">Updated: ${data.updated}</div>
+            `;
+
+            if (data.rates && data.rates.length > 0) {
+                data.rates.forEach(r => {
+                    const color = r.direction === 'up' ? '#10b981' : '#ef4444';
+                    const arrow = r.direction === 'up' ? '▲' : '▼';
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #111827; border: 1px solid #1f2937; border-radius: 6px; margin-bottom: 6px;">
+                            <span style="color: #e5e7eb; font-weight: 600; font-size: 12px;">${r.pair}</span>
+                            <div style="text-align: right;">
+                                <span style="color: #fff; font-size: 14px; font-weight: 700; font-family: 'Roboto Mono', monospace;">${r.rate}</span>
+                                <span style="color: ${color}; font-size: 10px; margin-left: 8px;">${arrow} ${r.change_pct}%</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="color: #6b7280;">Loading FX rates...</div>';
+            }
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'SCREENER_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #3b82f6;">${data.title}</div>
+            `;
+
+            if (data.results && data.results.length > 0) {
+                html += `<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; font-size: 9px; color: #6b7280; padding: 4px 8px; border-bottom: 1px solid #1f2937;"><span>SYMBOL</span><span style="text-align:right">PRICE</span><span style="text-align:right">CHG%</span></div>`;
+                data.results.forEach(s => {
+                    const color = s.change_pct >= 0 ? '#10b981' : '#ef4444';
+                    html += `
+                        <div onclick="executeCommand('ADVISE ${s.symbol}')" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; padding: 8px; background: #111827; border: 1px solid #1f2937; border-radius: 4px; margin-bottom: 4px; cursor: pointer;">
+                            <span style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${s.symbol}</span>
+                            <span style="color: #fff; text-align: right; font-family: 'Roboto Mono'; font-size: 11px;">₹${s.price}</span>
+                            <span style="color: ${color}; text-align: right; font-size: 11px; font-weight: 600;">${s.change_pct >= 0 ? '+' : ''}${s.change_pct}%</span>
+                        </div>
+                    `;
+                });
+            }
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'MOVERS_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #10b981;">${data.title}</div>
+            `;
+
+            // Market summary
+            if (data.summary) {
+                const s = data.summary;
+                html += `
+                    <div style="background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 10px; margin-bottom: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                        <div><div style="color: #10b981; font-size: 16px; font-weight: 700;">${s.gainers}</div><div style="color: #6b7280; font-size: 9px;">GAINERS</div></div>
+                        <div><div style="color: #ef4444; font-size: 16px; font-weight: 700;">${s.losers}</div><div style="color: #6b7280; font-size: 9px;">LOSERS</div></div>
+                        <div><div style="color: ${s.market_sentiment === 'BULLISH' ? '#10b981' : '#ef4444'}; font-size: 12px; font-weight: 700;">${s.market_sentiment}</div><div style="color: #6b7280; font-size: 9px;">SENTIMENT</div></div>
+                    </div>
+                `;
+            }
+
+            // Gainers
+            html += '<div style="color: #10b981; font-weight: 600; margin-bottom: 8px; font-size: 11px;">🟢 TOP GAINERS</div>';
+            if (data.gainers) {
+                data.gainers.forEach(s => {
+                    html += `
+                        <div onclick="executeCommand('CHART ${s.symbol}')" style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(16,185,129,0.1); border-left: 2px solid #10b981; margin-bottom: 4px; cursor: pointer;">
+                            <span style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${s.symbol}</span>
+                            <span style="color: #10b981; font-size: 11px; font-weight: 600;">+${s.change_pct}%</span>
+                        </div>
+                    `;
+                });
+            }
+
+            // Losers
+            html += '<div style="color: #ef4444; font-weight: 600; margin: 12px 0 8px; font-size: 11px;">🔴 TOP LOSERS</div>';
+            if (data.losers) {
+                data.losers.forEach(s => {
+                    html += `
+                        <div onclick="executeCommand('CHART ${s.symbol}')" style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(239,68,68,0.1); border-left: 2px solid #ef4444; margin-bottom: 4px; cursor: pointer;">
+                            <span style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${s.symbol}</span>
+                            <span style="color: #ef4444; font-size: 11px; font-weight: 600;">${s.change_pct}%</span>
+                        </div>
+                    `;
+                });
+            }
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'SECTORS_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #8b5cf6;">${data.title}</div>
+                <div style="font-size: 10px; color: #6b7280; margin-bottom: 15px;">US Sector ETFs | ${data.updated}</div>
+            `;
+
+            if (data.sectors && data.sectors.length > 0) {
+                html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">';
+                data.sectors.forEach(s => {
+                    const color = s.direction === 'up' ? '#10b981' : '#ef4444';
+                    const bgColor = s.direction === 'up' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                    html += `
+                        <div style="background: ${bgColor}; border: 1px solid ${color}40; border-radius: 6px; padding: 10px;">
+                            <div style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${s.sector}</div>
+                            <div style="color: ${color}; font-size: 16px; font-weight: 700; margin-top: 4px;">${s.change_pct >= 0 ? '+' : ''}${s.change_pct}%</div>
+                            <div style="color: #6b7280; font-size: 9px; margin-top: 2px;">${s.symbol} • $${s.price}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            detailView.innerHTML = html;
+        }
+
+        if (data.type === 'CALENDAR_VIEW') {
+            let html = `
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #f59e0b;">${data.title}</div>
+            `;
+
+            if (data.events && data.events.length > 0) {
+                data.events.forEach(e => {
+                    const impactColor = e.impact === 'HIGH' ? '#ef4444' : e.impact === 'MEDIUM' ? '#f59e0b' : '#6b7280';
+                    const isToday = e.days_until === 0;
+                    html += `
+                        <div style="background: ${isToday ? 'rgba(245,158,11,0.15)' : '#111827'}; border: 1px solid ${isToday ? '#f59e0b' : '#1f2937'}; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <span style="color: #e5e7eb; font-weight: 600; font-size: 11px;">${e.event}</span>
+                                <span style="background: ${impactColor}20; color: ${impactColor}; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 600;">${e.impact}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                                <span style="color: #6b7280; font-size: 10px;">📅 ${e.formatted_date} (${e.day_name}) • ${e.time}</span>
+                                <span style="color: #3b82f6; font-size: 10px;">${e.currency}</span>
+                            </div>
+                            ${isToday ? '<div style="color: #f59e0b; font-size: 9px; margin-top: 6px; font-weight: 600;">⚡ TODAY</div>' : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div style="color: #6b7280;">No upcoming events.</div>';
+            }
+            detailView.innerHTML = html;
+        }
     }
 
     function drawChart() {
-        if (!chartData.length) return;
+        if (!chartData || chartData.length === 0) return;
+
         const w = mainChart.width;
         const h = mainChart.height;
         ctx.clearRect(0, 0, w, h);
@@ -1603,7 +2228,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let min = Math.min(...prices);
         let max = Math.max(...prices);
 
+        // Handle single point or flat line case
+        if (min === max) {
+            min -= 1;
+            max += 1;
+        }
+
         // Adjust scale for bands if present
+
         if (chartBands) {
             const lower = chartBands.lower.filter(v => v);
             const upper = chartBands.upper.filter(v => v);
@@ -1617,16 +2249,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Draw Bollinger Bands (Area)
         if (chartBands && chartBands.upper.length) {
+            const xStep = chartData.length > 1 ? (w / (chartData.length - 1)) : 0;
             ctx.beginPath();
+
             chartBands.upper.forEach((v, i) => {
-                const x = (i / (chartData.length - 1)) * w;
+                const x = i * xStep;
                 const y = h - ((v - min) / range) * h;
                 if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             });
             // Reverse down lower band
             for (let i = chartBands.lower.length - 1; i >= 0; i--) {
                 const v = chartBands.lower[i];
-                const x = (i / (chartData.length - 1)) * w;
+                const x = i * xStep;
                 const y = h - ((v - min) / range) * h;
                 ctx.lineTo(x, y);
             }
@@ -1643,8 +2277,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.beginPath();
         ctx.strokeStyle = '#00aaff';
         ctx.lineWidth = 2;
+        const xStep = chartData.length > 1 ? (w / (chartData.length - 1)) : 0;
+
         chartData.forEach((d, i) => {
-            const x = (i / (chartData.length - 1)) * w;
+            const x = i * xStep;
             const y = h - ((d.p - min) / range) * h;
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         });
@@ -1766,6 +2402,33 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText('● MOVING', 10, h - 30);
         ctx.fillStyle = '#ffaa00';
         ctx.fillText('● ANCHORED', 10, h - 15);
+    }
+
+    function drawSparkline(ctx, data, color) {
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!data || data.length < 2) return;
+
+        const min = Math.min(...data);
+        const max = Math.max(...data);
+        const range = max - min || 1;
+
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+
+        data.forEach((p, i) => {
+            const x = (i / (data.length - 1)) * w;
+            // Invert Y (canvas origin is top-left)
+            const y = h - ((p - min) / range) * (h * 0.8) - (h * 0.1);
+
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+
+        ctx.stroke();
     }
 
     window.executeCommand = executeCommand;
