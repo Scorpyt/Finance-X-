@@ -125,25 +125,65 @@ def process_command(req: CommandRequest):
             "content": f"SCAN COMPLETE.\nREGIME: {snapshot.regime.value}\nVOLATILITY INDEX: {engine.get_ticker('VIX').current_price}\nANOMALIES: {len(snapshot.active_events)} active risk events."
         }
 
-    elif cmd == "TANKERS":
-        # Return geospatial data
-        metrics = engine.tanker_sim.get_supply_metrics()
+    elif cmd == "STUDY":
+        # Study Insights - show available topics
+        topics = engine.study_insights.get_all_topics()
         return {
-            "type": "MAP_DATA",
-            "title": f"Global Asset Tracking ({metrics['total_ships']} Vessels)",
-            "metrics": f"VOL AT SEA: {int(metrics['volume_index'])} | ACTIVE: {int(metrics['moving_ratio']*100)}%",
-            "assets": [
-                {
-                    "id": t.id,
-                    "name": t.name,
-                    "lat": t.location.lat,
-                    "lon": t.location.lon,
-                    "status": t.status,
-                    "dest": t.destination,
-                    "heading": t.heading
+            "type": "STUDY_TOPICS",
+            "title": "Finance Interview Study Topics",
+            "topics": topics
+        }
+    
+    elif cmd.startswith("STUDY "):
+        # Study specific category
+        parts = cmd.split(" ")
+        if len(parts) >= 2:
+            category = parts[1].lower()
+            questions = engine.study_insights.get_questions_by_category(category)
+            return {
+                "type": "STUDY_QUESTIONS",
+                "title": f"Interview Questions: {category.replace('_', ' ').title()}",
+                "category": category,
+                "questions": questions
+            }
+        return {"type": "ERROR", "content": "Usage: STUDY <category>"}
+    
+    elif cmd.startswith("ANSWER "):
+        # Get answer for a specific question
+        parts = cmd.split(" ")
+        if len(parts) >= 2:
+            question_id = parts[1]
+            answer = engine.study_insights.get_question_with_answer(question_id)
+            if answer:
+                return {
+                    "type": "STUDY_ANSWER",
+                    "title": "Question & Answer",
+                    "data": answer
                 }
-                for t in engine.tanker_sim.tankers
-            ]
+            return {"type": "ERROR", "content": "Question not found."}
+        return {"type": "ERROR", "content": "Usage: ANSWER <question_id>"}
+    
+    elif cmd == "SCENARIO":
+        # Generate market scenario based on current data
+        market_data = {
+            "VIX": engine.get_ticker("VIX").current_price,
+            "SPX": engine.get_ticker("SPX").current_price,
+            "BTC": engine.get_ticker("BTC").current_price
+        }
+        scenario = engine.study_insights.generate_market_scenario(market_data)
+        return {
+            "type": "MARKET_SCENARIO",
+            "title": scenario["title"],
+            "scenario": scenario
+        }
+    
+    elif cmd == "RESOURCES":
+        # Get study resources
+        resources = engine.study_insights.get_resources()
+        return {
+            "type": "STUDY_RESOURCES",
+            "title": "Study Resources & Recommended Reading",
+            "resources": resources
         }
 
     elif cmd == "NEWS":
@@ -222,10 +262,10 @@ def get_market():
 
 def step_simulation():
     global current_time
-    # Smaller steps for smoother tanker movement appearance if we spam NEXT
+    # Advance simulation time for price updates
     current_time += timedelta(minutes=15)
     engine.apply_decay(current_time)
-    engine.detect_state(current_time) # Updates prices & tankers
+    engine.detect_state(current_time) # Updates prices
     
     # Inject Random Event
     if random.random() > 0.8:

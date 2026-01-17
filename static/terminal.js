@@ -42,12 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Navigation buttons
     const btnOverview = document.getElementById('btnOverview');
-    const btnTankerMap = document.getElementById('btnTankerMap');
+    const btnStudyInsights = document.getElementById('btnStudyInsights');
     const btnMarketMap = document.getElementById('btnMarketMap');
 
     if (btnOverview) {
         btnOverview.addEventListener('click', () => {
-            disableTankerAnalysisMode();
             switchView('LANDING');
 
             // Scroll landing page to top
@@ -65,25 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let mapMode = null; // 'TANKER' or 'MARKET'
     let marketData = [];
 
-    if (btnTankerMap) {
-        btnTankerMap.addEventListener('click', async () => {
-            if (mapAssets.length === 0) {
-                console.log('[Tanker Map] Loading vessel data...');
-                await executeCommand('TANKERS');
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            mapMode = 'TANKER';
-            switchView('MAP_HD');
-
-            // Enable full-screen analysis mode
-            enableTankerAnalysisMode();
-
-            // Force map to fit container
-            setTimeout(() => {
-                if (leafletMap) leafletMap.invalidateSize();
-                renderTankerMap();
-                updateTankerRiskMetrics();
-            }, 100);
+    // Study Insights Button
+    if (btnStudyInsights) {
+        btnStudyInsights.addEventListener('click', async () => {
+            console.log('[Study Insights] Loading study topics...');
+            switchView('STUDY');
+            await loadStudyTopics();
         });
     }
 
@@ -134,11 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const landingView = document.getElementById('landingView');
         const chartCanvas = document.getElementById('mainChart');
         const leafletMapEl = document.getElementById('leafletMap');
+        const studyView = document.getElementById('studyInsightsView');
 
         // Hide all views
         landingView.style.display = 'none';
         chartCanvas.style.display = 'none';
         leafletMapEl.style.display = 'none';
+        if (studyView) studyView.style.display = 'none';
 
         // Update button states
         updateButtonStates(mode);
@@ -157,20 +145,26 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (mode === 'MAP_HD') {
             leafletMapEl.style.display = 'block';
             if (!leafletMap) initLeafletMap();
-            document.getElementById('chartSymbol').innerText = mapMode === 'TANKER' ? 'TANKER MAP' : 'MARKET MAP';
+            document.getElementById('chartSymbol').innerText = 'MARKET MAP';
             // Destroy Locomotive Scroll when not on landing page
             destroyLocomotiveScroll();
+        } else if (mode === 'STUDY') {
+            if (studyView) studyView.style.display = 'block';
+            document.getElementById('chartSymbol').innerText = 'STUDY INSIGHTS';
+            // Initialize Locomotive Scroll for study view
+            setTimeout(() => initStudyLocomotiveScroll(), 100);
         }
     }
 
     function updateButtonStates(mode) {
         const buttons = {
             'LANDING': btnOverview,
-            'MAP_HD': mapMode === 'TANKER' ? btnTankerMap : btnMarketMap
+            'STUDY': btnStudyInsights,
+            'MAP_HD': btnMarketMap
         };
 
         // Reset all buttons
-        [btnOverview, btnTankerMap, btnMarketMap].forEach(btn => {
+        [btnOverview, btnStudyInsights, btnMarketMap].forEach(btn => {
             if (btn) {
                 btn.style.background = '#111';
                 btn.style.color = '#6b7280';
@@ -279,6 +273,33 @@ document.addEventListener('DOMContentLoaded', () => {
             locomotiveScroll.destroy();
             locomotiveScroll = null;
             console.log('[Locomotive Scroll] Destroyed');
+        }
+    }
+
+    function initStudyLocomotiveScroll() {
+        // Destroy existing instance if any
+        if (locomotiveScroll) {
+            locomotiveScroll.destroy();
+            locomotiveScroll = null;
+        }
+
+        // Initialize Locomotive Scroll on study view
+        const studyView = document.getElementById('studyInsightsView');
+        if (studyView && typeof LocomotiveScroll !== 'undefined') {
+            locomotiveScroll = new LocomotiveScroll({
+                el: studyView,
+                smooth: true,
+                multiplier: 1.2,
+                lerp: 0.08,
+                smartphone: {
+                    smooth: true
+                },
+                tablet: {
+                    smooth: true
+                }
+            });
+
+            console.log('[Locomotive Scroll] Initialized for Study View');
         }
     }
 
@@ -750,6 +771,423 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    // ===== STUDY INSIGHTS FUNCTIONS =====
+
+    async function loadStudyTopics() {
+        try {
+            const res = await fetch('/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: 'STUDY' })
+            });
+            const data = await res.json();
+            if (data.type === 'STUDY_TOPICS') {
+                renderStudyTopics(data.topics);
+            }
+        } catch (err) {
+            console.error('Error loading study topics:', err);
+        }
+    }
+
+    function renderStudyTopics(topics) {
+        console.log('[Study] Rendering topics:', topics);
+        const content = document.getElementById('studyContent');
+        if (!content) {
+            console.error('[Study] studyContent element not found!');
+            return;
+        }
+        console.log('[Study] studyContent element found, rendering...');
+
+        // Group topics by category
+        const categories = {
+            'investment_banking': { name: 'Investment Banking', icon: '🏦', color: '#10b981', desc: 'Valuation, M&A, DCF Analysis' },
+            'private_equity': { name: 'Private Equity', icon: '💼', color: '#3b82f6', desc: 'LBO Models, Due Diligence' },
+            'hedge_funds': { name: 'Hedge Funds', icon: '📈', color: '#f59e0b', desc: 'Trading Strategies, Risk Mgmt' },
+            'asset_management': { name: 'Asset Management', icon: '📊', color: '#8b5cf6', desc: 'Portfolio Theory, Attribution' },
+            'financial_analysis': { name: 'Financial Analysis', icon: '📑', color: '#ef4444', desc: 'Statements, Ratios, Metrics' }
+        };
+
+        content.innerHTML = `
+            <div style="font-family: 'Inter', sans-serif; max-width: 1200px; margin: 0 auto;">
+                <!-- Header -->
+                <div style="margin-bottom: 32px; text-align: center;">
+                    <h1 style="color: #10b981; font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px;">
+                        📚 Finance Interview Prep
+                    </h1>
+                    <p style="color: #9ca3af; font-size: 14px; line-height: 1.6;">
+                        Master finance interviews with real-time market data and expert-level questions
+                    </p>
+                </div>
+                
+                <!-- Category Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    ${Object.entries(categories).map(([key, cat]) => {
+            const topicCount = topics.filter(t => t.category === key).length;
+            return `
+                        <div onclick="loadStudyCategory('${key}')" 
+                             style="background: linear-gradient(135deg, rgba(17,24,39,0.95), rgba(31,41,55,0.9)); 
+                                    border: 1px solid ${cat.color}30; 
+                                    border-radius: 12px; 
+                                    padding: 20px; 
+                                    cursor: pointer; 
+                                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                    position: relative;
+                                    overflow: hidden;"
+                             onmouseover="this.style.borderColor='${cat.color}'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)';"
+                             onmouseout="this.style.borderColor='${cat.color}30'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                            
+                            <!-- Gradient overlay -->
+                            <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; 
+                                        background: radial-gradient(circle at top right, ${cat.color}15, transparent); 
+                                        pointer-events: none;"></div>
+                            
+                            <div style="position: relative; z-index: 1;">
+                                <div style="font-size: 36px; margin-bottom: 12px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                                    ${cat.icon}
+                                </div>
+                                <h3 style="color: ${cat.color}; font-size: 16px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.3px;">
+                                    ${cat.name}
+                                </h3>
+                                <p style="color: #9ca3af; font-size: 12px; line-height: 1.5; margin-bottom: 12px;">
+                                    ${cat.desc}
+                                </p>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="color: #6b7280; font-size: 11px; font-weight: 500;">
+                                        ${topicCount} topics
+                                    </span>
+                                    <span style="color: ${cat.color}; font-size: 18px;">→</span>
+                                </div>
+                            </div>
+                        </div>
+                    `}).join('')}
+                </div>
+                
+                <!-- Quick Actions -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px;">
+                    <div onclick="loadMarketScenario()" 
+                         style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(34,197,94,0.1)); 
+                                border: 1px solid #10b98150; 
+                                border-radius: 12px; 
+                                padding: 20px; 
+                                cursor: pointer;
+                                transition: all 0.3s;"
+                         onmouseover="this.style.borderColor='#10b981'; this.style.transform='translateY(-2px)';"
+                         onmouseout="this.style.borderColor='#10b98150'; this.style.transform='translateY(0)';">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="font-size: 32px;">🎯</div>
+                            <div>
+                                <div style="color: #10b981; font-size: 15px; font-weight: 600; margin-bottom: 4px;">
+                                    Live Market Scenario
+                                </div>
+                                <div style="color: #9ca3af; font-size: 12px;">
+                                    Practice with real-time VIX, SPX & BTC data
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div onclick="loadStudyResources()" 
+                         style="background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(37,99,235,0.1)); 
+                                border: 1px solid #3b82f650; 
+                                border-radius: 12px; 
+                                padding: 20px; 
+                                cursor: pointer;
+                                transition: all 0.3s;"
+                         onmouseover="this.style.borderColor='#3b82f6'; this.style.transform='translateY(-2px)';"
+                         onmouseout="this.style.borderColor='#3b82f650'; this.style.transform='translateY(0)';">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="font-size: 32px;">📖</div>
+                            <div>
+                                <div style="color: #3b82f6; font-size: 15px; font-weight: 600; margin-bottom: 4px;">
+                                    Study Resources
+                                </div>
+                                <div style="color: #9ca3af; font-size: 12px;">
+                                    Books, courses & certifications
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadStudyCategory(category) {
+        try {
+            const res = await fetch('/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: `STUDY ${category}` })
+            });
+            const data = await res.json();
+            if (data.type === 'STUDY_QUESTIONS') {
+                renderStudyQuestions(data);
+            }
+        } catch (err) {
+            console.error('Error loading questions:', err);
+        }
+    }
+
+    function renderStudyQuestions(data) {
+        const content = document.getElementById('studyContent');
+        if (!content) return;
+
+        const difficultyColors = {
+            'beginner': '#10b981',
+            'intermediate': '#f59e0b',
+            'advanced': '#ef4444'
+        };
+
+        content.innerHTML = `
+            <div style="font-family: 'Inter', sans-serif;">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                    <button onclick="loadStudyTopics()" 
+                            style="background: #1f2937; color: #9ca3af; border: 1px solid #374151; 
+                                   padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-right: 12px;">
+                        ← Back
+                    </button>
+                    <h2 style="color: #10b981; font-size: 16px; margin: 0;">${data.title}</h2>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    ${data.questions.map((q, idx) => `
+                        <div onclick="loadQuestionAnswer('${q.id}')"
+                             style="background: rgba(31,41,55,0.5); border: 1px solid #374151; 
+                                    border-radius: 8px; padding: 14px; cursor: pointer;
+                                    transition: border-color 0.2s;"
+                             onmouseover="this.style.borderColor='#10b981'"
+                             onmouseout="this.style.borderColor='#374151'">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                <span style="color: #6b7280; font-size: 10px;">Question ${idx + 1}</span>
+                                <span style="background: ${difficultyColors[q.difficulty]}20; color: ${difficultyColors[q.difficulty]}; 
+                                             font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 600;">
+                                    ${q.difficulty.toUpperCase()}
+                                </span>
+                            </div>
+                            <div style="color: #e5e7eb; font-size: 12px; line-height: 1.5;">${q.question}</div>
+                            ${q.uses_market_data ? `
+                                <div style="color: #3b82f6; font-size: 10px; margin-top: 8px;">
+                                    📊 Uses real-time market data
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadQuestionAnswer(questionId) {
+        console.log('[Study] Loading answer for question:', questionId);
+        try {
+            const res = await fetch('/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: `ANSWER ${questionId}` })
+            });
+            const data = await res.json();
+            console.log('[Study] Answer response:', data);
+            if (data.type === 'STUDY_ANSWER') {
+                renderQuestionAnswer(data.data);
+            } else {
+                console.error('[Study] Unexpected response type:', data.type);
+            }
+        } catch (err) {
+            console.error('Error loading answer:', err);
+        }
+    }
+
+    function renderQuestionAnswer(data) {
+        const content = document.getElementById('studyContent');
+        if (!content) return;
+
+        content.innerHTML = `
+            <div style="font-family: 'Inter', sans-serif;">
+                <button onclick="loadStudyCategory('${data.category}')" 
+                        style="background: #1f2937; color: #9ca3af; border: 1px solid #374151; 
+                               padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 16px;">
+                    ← Back to Questions
+                </button>
+                
+                <div style="background: rgba(31,41,55,0.5); border: 1px solid #374151; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                    <div style="color: #9ca3af; font-size: 10px; margin-bottom: 8px;">QUESTION</div>
+                    <div style="color: #e5e7eb; font-size: 14px; line-height: 1.6;">${data.question}</div>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(34,197,94,0.1)); 
+                            border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                    <div style="color: #10b981; font-size: 10px; font-weight: 600; margin-bottom: 8px;">✓ MODEL ANSWER</div>
+                    <div style="color: #e5e7eb; font-size: 13px; line-height: 1.6;">${data.answer}</div>
+                </div>
+                
+                <div style="background: rgba(59,130,246,0.1); border: 1px solid #3b82f6; border-radius: 8px; padding: 16px;">
+                    <div style="color: #3b82f6; font-size: 10px; font-weight: 600; margin-bottom: 8px;">💡 DETAILED EXPLANATION</div>
+                    <div style="color: #d1d5db; font-size: 12px; line-height: 1.7;">${data.explanation}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadMarketScenario() {
+        try {
+            const res = await fetch('/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: 'SCENARIO' })
+            });
+            const data = await res.json();
+            if (data.type === 'MARKET_SCENARIO') {
+                renderMarketScenario(data.scenario);
+            }
+        } catch (err) {
+            console.error('Error loading scenario:', err);
+        }
+    }
+
+    function renderMarketScenario(scenario) {
+        const content = document.getElementById('studyContent');
+        if (!content) return;
+
+        const typeColors = {
+            'high_volatility': '#ef4444',
+            'low_volatility': '#f59e0b',
+            'normal_market': '#10b981'
+        };
+        const color = typeColors[scenario.type] || '#10b981';
+
+        content.innerHTML = `
+            <div style="font-family: 'Inter', sans-serif;">
+                <button onclick="loadStudyTopics()" 
+                        style="background: #1f2937; color: #9ca3af; border: 1px solid #374151; 
+                               padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 16px;">
+                    ← Back
+                </button>
+                
+                <div style="background: linear-gradient(135deg, ${color}10, ${color}05); 
+                            border: 2px solid ${color}; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                    <div style="color: ${color}; font-size: 18px; font-weight: 700; margin-bottom: 8px;">
+                        🎯 ${scenario.title}
+                    </div>
+                    <div style="color: #d1d5db; font-size: 13px; line-height: 1.6; margin-bottom: 16px;">
+                        ${scenario.description}
+                    </div>
+                    
+                    <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                        <div style="color: #9ca3af; font-size: 10px; margin-bottom: 8px;">CURRENT MARKET DATA</div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                            <div style="text-align: center;">
+                                <div style="color: #6b7280; font-size: 10px;">S&P 500</div>
+                                <div style="color: #10b981; font-size: 16px; font-weight: 700;">${scenario.market_context.SPX.toLocaleString()}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="color: #6b7280; font-size: 10px;">VIX</div>
+                                <div style="color: ${color}; font-size: 16px; font-weight: 700;">${scenario.market_context.VIX.toFixed(2)}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="color: #6b7280; font-size: 10px;">Bitcoin</div>
+                                <div style="color: #f59e0b; font-size: 16px; font-weight: 700;">$${scenario.market_context.BTC.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(31,41,55,0.5); border: 1px solid #374151; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                    <div style="color: #f59e0b; font-size: 12px; font-weight: 600; margin-bottom: 12px;">📝 CHALLENGE</div>
+                    <div style="color: #e5e7eb; font-size: 13px; line-height: 1.7;">${scenario.challenge}</div>
+                </div>
+                
+                <div style="background: rgba(31,41,55,0.5); border: 1px solid #374151; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                    <div style="color: #3b82f6; font-size: 12px; font-weight: 600; margin-bottom: 12px;">💡 HINTS</div>
+                    ${scenario.hints.map(hint => `
+                        <div style="color: #9ca3af; font-size: 12px; padding: 6px 0; border-bottom: 1px solid #1f2937;">
+                            • ${hint}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div id="solutionToggle" onclick="document.getElementById('solutionContent').style.display='block'; this.style.display='none';"
+                     style="background: #10b981; color: #111; border-radius: 8px; padding: 12px; text-align: center; 
+                            cursor: pointer; font-weight: 600; font-size: 13px;">
+                    Reveal Solution Approach
+                </div>
+                <div id="solutionContent" style="display: none; background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(34,197,94,0.1)); 
+                            border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-top: 12px;">
+                    <div style="color: #10b981; font-size: 12px; font-weight: 600; margin-bottom: 8px;">✓ SOLUTION APPROACH</div>
+                    <div style="color: #d1d5db; font-size: 12px; line-height: 1.7;">${scenario.solution_approach}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadStudyResources() {
+        try {
+            const res = await fetch('/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: 'RESOURCES' })
+            });
+            const data = await res.json();
+            if (data.type === 'STUDY_RESOURCES') {
+                renderStudyResources(data.resources);
+            }
+        } catch (err) {
+            console.error('Error loading resources:', err);
+        }
+    }
+
+    function renderStudyResources(resources) {
+        const content = document.getElementById('studyContent');
+        if (!content) return;
+
+        const typeIcons = {
+            'book': '📚',
+            'course': '🎓',
+            'certification': '🏆',
+            'website': '🌐'
+        };
+
+        content.innerHTML = `
+            <div style="font-family: 'Inter', sans-serif;">
+                <button onclick="loadStudyTopics()" 
+                        style="background: #1f2937; color: #9ca3af; border: 1px solid #374151; 
+                               padding: 4px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 16px;">
+                    ← Back
+                </button>
+                
+                <h2 style="color: #10b981; font-size: 16px; margin-bottom: 16px;">📖 Study Resources</h2>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    ${resources.map(r => `
+                        <div style="background: rgba(31,41,55,0.5); border: 1px solid #374151; 
+                                    border-radius: 8px; padding: 14px;">
+                            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                <div style="font-size: 24px;">${typeIcons[r.type] || '📄'}</div>
+                                <div style="flex: 1;">
+                                    <div style="color: #e5e7eb; font-size: 13px; font-weight: 600; margin-bottom: 4px;">
+                                        ${r.title}
+                                    </div>
+                                    <div style="color: #6b7280; font-size: 11px; margin-bottom: 6px;">
+                                        by ${r.author} • ${r.type.charAt(0).toUpperCase() + r.type.slice(1)}
+                                    </div>
+                                    <div style="color: #9ca3af; font-size: 11px;">
+                                        ${r.description}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // Make study functions globally accessible
+    window.loadStudyCategory = loadStudyCategory;
+    window.loadStudyTopics = loadStudyTopics;
+    window.loadQuestionAnswer = loadQuestionAnswer;
+    window.loadMarketScenario = loadMarketScenario;
+    window.loadStudyResources = loadStudyResources;
+
     function initLeafletMap() {
         leafletMap = L.map('leafletMap', { center: [20, 0], zoom: 2 });
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -1128,7 +1566,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${data.state ? `<div style="margin-bottom:10px">ANALYSIS: <span class="state-badge">${data.state}</span></div>` : ''}
                 <div style="white-space: pre-wrap; line-height: 1.5;">${data.content || data.details}</div>
             </div>`;
-        } else {
+        }
+        // Study Insights response handlers
+        else if (data.type === 'STUDY_TOPICS') {
+            switchView('STUDY');
+            renderStudyTopics(data.topics);
+        }
+        else if (data.type === 'STUDY_QUESTIONS') {
+            switchView('STUDY');
+            renderStudyQuestions(data);
+        }
+        else if (data.type === 'STUDY_ANSWER') {
+            switchView('STUDY');
+            renderQuestionAnswer(data.data);
+        }
+        else if (data.type === 'MARKET_SCENARIO') {
+            switchView('STUDY');
+            renderMarketScenario(data.scenario);
+        }
+        else if (data.type === 'STUDY_RESOURCES') {
+            switchView('STUDY');
+            renderStudyResources(data.resources);
+        }
+        else {
             detailView.innerText = JSON.stringify(data, null, 2);
         }
     }
@@ -1310,4 +1770,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.executeCommand = executeCommand;
 });
-    
+
