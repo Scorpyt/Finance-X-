@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Body, Header
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -23,6 +24,14 @@ print(f"\n{'='*40}\n[SECURITY] ADMIN ACCESS KEY: {ADMIN_KEY}\n{'='*40}\n")
 SESSION_TOKENS = set()
 
 app = FastAPI(title="Financial Intelligence Terminal")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Global System State
 engine = IntelligenceEngine(decay_rate=0.2)
@@ -53,9 +62,20 @@ print("System ready.")
 class CommandRequest(BaseModel):
     command: str
 
+# Global state for UI monitoring
+LAST_COMMAND = {"cmd": "NONE", "status": "IDLE", "time": ""}
+
 @app.post("/command")
 def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
+    global LAST_COMMAND
     cmd = req.command.strip().upper()
+    
+    # Track command for Jarvis
+    LAST_COMMAND = {
+        "cmd": cmd,
+        "status": "EXECUTED",
+        "time": current_time.strftime("%H:%M:%S")
+    }
     
     # 1. Deterministic Command Routing
     if cmd == "TODAY":
@@ -178,10 +198,10 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         symbol = cmd.split(" ")[1]
         ticker = engine.get_ticker(symbol)
         if ticker:
-             return {
-                "type": "CHART_FULL",
-                "symbol": ticker.symbol,
-                "history": [{"t": p.timestamp.strftime("%H:%M"), "p": p.price, "v": p.volume} for p in ticker.history]
+            return {
+                "type": "CHART",
+                "title": f"Market Data: {symbol}",
+                "data": engine.get_market_chart_data(symbol)
             }
         else:
             # Fallback: Try India engine for NSE stocks
@@ -620,7 +640,8 @@ def get_status():
         "time": current_time.strftime("%H:%M"),
         "state": snapshot.state.value,
         "risk": snapshot.risk_score,
-        "regime": snapshot.regime.value
+        "regime": snapshot.regime.value,
+        "lastCommand": LAST_COMMAND
     }
 
 @app.get("/market")

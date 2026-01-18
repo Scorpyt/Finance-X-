@@ -21,7 +21,7 @@ function ExecutionMonitor() {
 
     const checkServer = async () => {
         try {
-            const response = await fetch('http://localhost:8000/status', {
+            const response = await fetch('http://127.0.0.1:8000/status', {
                 method: 'GET',
                 signal: AbortSignal.timeout(3000)
             });
@@ -235,6 +235,48 @@ function ExecutionMonitor() {
                     ) : (
                         <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
                             {serverStatus === 'offline' ? 'Server offline' : 'Loading...'}
+                        </div>
+                    )}
+                </div>
+
+                {/* Last User Command */}
+                <div className="monitor-card">
+                    <div className="monitor-card-header">
+                        <div className="monitor-card-icon purple">
+                            <Terminal size={20} />
+                        </div>
+                        <div>
+                            <div className="monitor-card-title">User Activity</div>
+                            <div className="monitor-card-subtitle">Last executed command</div>
+                        </div>
+                    </div>
+                    {serverStatus === 'online' && systemMetrics?.lastCommand ? (
+                        <>
+                            <div style={{
+                                fontFamily: 'monospace',
+                                fontSize: '16px',
+                                background: 'rgba(0,0,0,0.3)',
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--accent-cyan)'
+                            }}>
+                                > {systemMetrics.lastCommand.cmd}
+                            </div>
+                            <div style={{
+                                marginTop: '8px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                fontSize: '11px',
+                                color: 'var(--text-secondary)'
+                            }}>
+                                <span>{systemMetrics.lastCommand.status}</span>
+                                <span>{systemMetrics.lastCommand.time}</span>
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                            Waiting for input...
                         </div>
                     )}
                 </div>
