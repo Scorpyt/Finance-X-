@@ -315,7 +315,7 @@ function ExecutionMonitor() {
                                             {systemMetrics.state}
                                         </div>
                                         <div style={{ marginTop: '12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                                            Risk Score: <strong>{systemMetrics.risk?.toFixed(2) || 'N/A'}</strong>
+                                            Risk Score: <strong>{systemMetrics.risk != null ? systemMetrics.risk.toFixed(2) : 'N/A'}</strong>
                                         </div>
                                     </>
                                 ) : (
@@ -440,11 +440,11 @@ function ExecutionMonitor() {
                                                     fontSize: '13px',
                                                     fontWeight: '500',
                                                 }}>
-                                                    {ticker.change > 0 ? '+' : ''}{ticker.change?.toFixed(2)}%
+                                                    {ticker.change > 0 ? '+' : ''}{ticker.change != null ? ticker.change.toFixed(2) : '0.00'}%
                                                 </span>
                                             </div>
                                             <div style={{ fontSize: '18px', fontWeight: '700', marginTop: '8px' }}>
-                                                ${ticker.price?.toFixed(2)}
+                                                ${ticker.price != null ? ticker.price.toFixed(2) : '0.00'}
                                             </div>
                                         </div>
                                     ))}
@@ -585,13 +585,13 @@ function ExecutionMonitor() {
                                                 </span>
                                             </div>
                                             <div style={{ fontSize: '20px', fontWeight: '700', marginTop: '8px' }}>
-                                                ₹{stock.price?.toFixed(2)}
+                                                ₹{stock.price != null ? stock.price.toFixed(2) : '0.00'}
                                             </div>
                                             <div style={{
                                                 fontSize: '13px',
                                                 color: stock.change_pct > 0 ? 'var(--accent-green)' : 'var(--accent-red)',
                                             }}>
-                                                {stock.change_pct > 0 ? '+' : ''}{stock.change_pct?.toFixed(2)}%
+                                                {stock.change_pct > 0 ? '+' : ''}{stock.change_pct != null ? stock.change_pct.toFixed(2) : '0.00'}%
                                             </div>
                                         </div>
                                     ))}

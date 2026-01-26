@@ -28,6 +28,21 @@ app.add_middleware(
 # Initialize Bloomberg Engine
 bloomberg = BloombergEngine()
 
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup."""
+    print("[Bloomberg Service] Starting up...")
+    print("[Bloomberg Service] Economic calendar auto-refresh: ACTIVE")
+    cache_info = bloomberg.get_calendar_cache_info()
+    print(f"[Bloomberg Service] Calendar cache: {cache_info}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown."""
+    print("[Bloomberg Service] Shutting down...")
+    bloomberg.stop_background_updates()
+    print("[Bloomberg Service] Background updates stopped")
+
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
@@ -41,6 +56,8 @@ async def root():
             "screen": "/screen",
             "sectors": "/sectors",
             "economic_calendar": "/economic-calendar",
+            "economic_calendar_refresh": "/economic-calendar/refresh",
+            "economic_calendar_cache_info": "/economic-calendar/cache-info",
             "market_summary": "/market-summary"
         }
     }
@@ -163,27 +180,71 @@ async def get_sector_performance():
 
 @app.get("/economic-calendar")
 async def get_economic_calendar(
-    days_ahead: int = Query(10, ge=1, le=30, description="Number of days to look ahead")
+    days_ahead: int = Query(10, ge=1, le=30, description="Number of days to look ahead"),
+    impact: Optional[str] = Query(None, description="Filter by impact level (HIGH, MEDIUM, LOW)"),
+    currency: Optional[str] = Query(None, description="Filter by currency (USD, EUR, INR, etc.)")
 ):
     """
-    Get upcoming economic events.
+    Get upcoming economic events with optional filtering.
     
     Args:
         days_ahead: Number of days to look ahead (1-30)
+        impact: Filter by impact level (HIGH, MEDIUM, LOW)
+        currency: Filter by currency code (USD, EUR, INR, etc.)
         
     Returns:
         List of upcoming economic events
     """
     try:
-        events = bloomberg.get_economic_calendar(days_ahead)
+        events = bloomberg.get_economic_calendar(days_ahead=days_ahead, impact=impact, currency=currency)
         return {
             "success": True,
             "days_ahead": days_ahead,
+            "filters": {
+                "impact": impact,
+                "currency": currency
+            },
             "count": len(events),
             "data": events
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching economic calendar: {str(e)}")
+
+@app.get("/economic-calendar/refresh")
+async def refresh_economic_calendar():
+    """
+    Force refresh of economic calendar data from all sources.
+    
+    Returns:
+        Refreshed economic events
+    """
+    try:
+        events = bloomberg.refresh_economic_calendar()
+        return {
+            "success": True,
+            "message": "Economic calendar refreshed",
+            "count": len(events),
+            "data": events
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error refreshing economic calendar: {str(e)}")
+
+@app.get("/economic-calendar/cache-info")
+async def get_calendar_cache_info():
+    """
+    Get information about the economic calendar cache.
+    
+    Returns:
+        Cache status and metadata
+    """
+    try:
+        cache_info = bloomberg.get_calendar_cache_info()
+        return {
+            "success": True,
+            "data": cache_info
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting cache info: {str(e)}")
 
 @app.get("/market-summary")
 async def get_market_summary(

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 import threading
+from economic_calendar_fetcher import EconomicCalendarFetcher
 
 @dataclass
 class FXRate:
@@ -45,17 +46,8 @@ class BloombergEngine:
         "Communications": "XLC",
     }
     
-    # Economic Calendar (simulated major events)
-    ECONOMIC_EVENTS = [
-        {"date": "2026-01-15", "time": "14:00", "event": "Fed Interest Rate Decision", "impact": "HIGH", "currency": "USD"},
-        {"date": "2026-01-16", "time": "08:30", "event": "Initial Jobless Claims", "impact": "MEDIUM", "currency": "USD"},
-        {"date": "2026-01-17", "time": "10:00", "event": "Consumer Sentiment Index", "impact": "MEDIUM", "currency": "USD"},
-        {"date": "2026-01-20", "time": "09:00", "event": "RBI Policy Meeting", "impact": "HIGH", "currency": "INR"},
-        {"date": "2026-01-21", "time": "08:30", "event": "CPI Inflation Data", "impact": "HIGH", "currency": "USD"},
-        {"date": "2026-01-22", "time": "10:00", "event": "Existing Home Sales", "impact": "LOW", "currency": "USD"},
-        {"date": "2026-01-23", "time": "08:30", "event": "GDP Growth Rate (Q4)", "impact": "HIGH", "currency": "USD"},
-        {"date": "2026-01-24", "time": "10:00", "event": "New Home Sales", "impact": "MEDIUM", "currency": "USD"},
-    ]
+    # Economic Calendar now uses real-time data from EconomicCalendarFetcher
+    # No static events needed - all data is fetched live
     
     def __init__(self):
         self.fx_cache = {}
@@ -63,6 +55,10 @@ class BloombergEngine:
         self.sector_cache = {}
         self.sector_cache_time = None
         self.lock = threading.Lock()
+        
+        # Initialize economic calendar fetcher with auto-updates every hour
+        self.economic_fetcher = EconomicCalendarFetcher(update_interval_seconds=3600)
+        self.economic_fetcher.start_background_updates()
     
     def get_fx_rates(self) -> List[Dict]:
         """Fetch live FX rates from yfinance."""
@@ -215,24 +211,31 @@ class BloombergEngine:
         
         return sectors
     
-    def get_economic_calendar(self, days_ahead: int = 10) -> List[Dict]:
-        """Get upcoming economic events."""
-        today = datetime.now().date()
+    def get_economic_calendar(self, days_ahead: int = 10, impact: Optional[str] = None, 
+                             currency: Optional[str] = None) -> List[Dict]:
+        """Get upcoming economic events from live data sources.
         
-        events = []
-        for event in self.ECONOMIC_EVENTS:
-            event_date = datetime.strptime(event["date"], "%Y-%m-%d").date()
-            days_until = (event_date - today).days
+        Args:
+            days_ahead: Number of days to look ahead (default: 10)
+            impact: Filter by impact level (HIGH, MEDIUM, LOW)
+            currency: Filter by currency code (USD, EUR, INR, etc.)
             
-            if 0 <= days_until <= days_ahead:
-                events.append({
-                    **event,
-                    "days_until": days_until,
-                    "day_name": event_date.strftime("%A"),
-                    "formatted_date": event_date.strftime("%b %d")
-                })
-        
-        return sorted(events, key=lambda x: x["days_until"])
+        Returns:
+            List of upcoming economic events with enriched data
+        """
+        return self.economic_fetcher.get_events(days_ahead=days_ahead, impact=impact, currency=currency)
+    
+    def refresh_economic_calendar(self) -> List[Dict]:
+        """Force refresh of economic calendar data."""
+        return self.economic_fetcher.force_refresh()
+    
+    def get_calendar_cache_info(self) -> Dict:
+        """Get information about economic calendar cache status."""
+        return self.economic_fetcher.get_cache_info()
+    
+    def stop_background_updates(self):
+        """Stop background updates for economic calendar."""
+        self.economic_fetcher.stop_background_updates()
     
     def get_market_summary(self, market_data: List[Dict]) -> Dict:
         """Get overall market summary stats."""

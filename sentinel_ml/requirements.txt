@@ -1,0 +1,67 @@
+# Sentinel X - Requirements
+# Institution-grade financial intelligence platform
+
+# Core Data Science
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+
+# Machine Learning
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+lightgbm>=4.0.0
+
+# Deep Learning (Optional - for future enhancements)
+torch>=2.0.0
+tensorflow>=2.13.0
+
+# Hidden Markov Models
+hmmlearn>=0.3.0
+
+# Clustering
+hdbscan>=0.8.33
+
+# Time Series
+dtaidistance>=2.3.10
+ruptures>=1.1.8
+
+# Data Fetching
+yfinance>=0.2.28
+alpha-vantage>=2.3.1
+newsapi-python>=0.2.7
+
+# Parallel Processing
+ray>=2.7.0
+dask[complete]>=2023.9.0
+
+# GPU Acceleration (Optional)
+cupy-cuda11x>=12.0.0; platform_system != "Darwin"
+
+# API & Dashboard
+fastapi>=0.103.0
+uvicorn>=0.23.0
+plotly>=5.17.0
+dash>=2.13.0
+websockets>=11.0
+
+# Database
+sqlalchemy>=2.0.0
+redis>=5.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0
+joblib>=1.3.0
+tqdm>=4.66.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Logging & Monitoring
+loguru>=0.7.0
+
+# Date/Time
+python-dateutil>=2.8.2
+pytz>=2023.3

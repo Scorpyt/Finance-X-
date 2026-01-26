@@ -1,54 +1,49 @@
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import List, Dict
-import datetime
+"""
+DEPRECATED: This file is kept for backward compatibility only.
+Please use: from models import SystemState, MarketEvent, etc.
 
-class SystemState(Enum):
-    STABLE = "STABLE"
-    HIGH_VOLATILITY = "HIGH_VOLATILITY"
-    BULL_RUN = "BULL_RUN"
-    BEAR_MARKET = "BEAR_MARKET"
-    CRASH = "CRASH"
+The models have been restructured into a modular package:
+- models.enums: All enum definitions
+- models.market: Market-related models
+- models.ml_models: ML prediction models
+- models.sentinel_models: Sentinel X cognitive models
+- models.portfolio: Portfolio and position models
+- models.validators: Validation utilities
+"""
 
-class MarketRegime(Enum):
-    LOW_VOL = "LOW_VOL"
-    HIGH_VOL = "HIGH_VOL"
-    TRENDING_UP = "TRENDING_UP"
-    TRENDING_DOWN = "TRENDING_DOWN"
+import warnings
 
-@dataclass
-class MarketEvent:
-    timestamp: datetime.datetime
-    event_type: str
-    description: str
-    base_impact: float  # 0.0 to 10.0
-    asset_class: str    # e.g., "CRYPTO", "STOCKS", "FOREX"
-    
-@dataclass
-class ProcessedEvent:
-    original_event: MarketEvent
-    current_weight: float
-    relevance_score: float
+# Show deprecation warning
+warnings.warn(
+    "Importing from models.py is deprecated. "
+    "Use 'from models import ...' instead. "
+    "This compatibility shim will be removed in a future version.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
-@dataclass
-class PricePoint:
-    timestamp: datetime.datetime
-    price: float
-    volume: int
+# Import everything from the new models package for backward compatibility
+from models.enums import SystemState, MarketRegime, AssetClass
+from models.market import MarketEvent, ProcessedEvent, PricePoint, Ticker, MarketSnapshot
+from models.ml_models import MLPrediction, FeatureVector, ModelMetrics
+from models.sentinel_models import BeliefDistribution, CognitiveSnapshot, RegimeTransition
+from models.portfolio import Position, Portfolio
 
-@dataclass
-class Ticker:
-    symbol: str
-    name: str
-    current_price: float
-    change_pct: float
-    history: List[PricePoint] = field(default_factory=list)
-    sector: str = "GENERAL"
-
-@dataclass
-class MarketSnapshot:
-    timestamp: datetime.datetime
-    state: SystemState
-    risk_score: float
-    active_events: List[ProcessedEvent]
-    regime: MarketRegime = MarketRegime.LOW_VOL
+__all__ = [
+    'SystemState',
+    'MarketRegime',
+    'AssetClass',
+    'MarketEvent',
+    'ProcessedEvent',
+    'PricePoint',
+    'Ticker',
+    'MarketSnapshot',
+    'MLPrediction',
+    'FeatureVector',
+    'ModelMetrics',
+    'BeliefDistribution',
+    'CognitiveSnapshot',
+    'RegimeTransition',
+    'Position',
+    'Portfolio',
+]

@@ -308,16 +308,16 @@ function App() {
   const statsData = {
     pythonFiles: {
       icon: FileCode,
-      title: '27 Python Files',
-      subtitle: 'Core codebase files',
+      title: '38 Python Files',
+      subtitle: 'Core codebase + ML + Sentinel X',
       color: '#22c55e',
-      description: 'The Finance-X terminal is built with 27 Python files organized into core application, engines, support modules, and extensions. The codebase follows a modular architecture for maintainability and scalability.',
+      description: 'Finance-X now includes 38 Python files: 27 core application files, 5 ML infrastructure modules, and 6 Sentinel X cognitive architecture modules. The system combines traditional market analysis with machine learning predictions and autonomous intelligence.',
       summaryStats: [
         { value: totalLines.toLocaleString(), label: 'Total Lines' },
         { value: '4', label: 'Core Files' },
         { value: '5', label: 'Engines' },
-        { value: '4', label: 'Support' },
-        { value: '5', label: 'Extensions' },
+        { value: '5', label: 'ML Modules' },
+        { value: '6', label: 'Sentinel X' },
       ],
       itemsLabel: 'ALL PYTHON FILES',
       items: [
@@ -339,6 +339,22 @@ function App() {
             { label: 'Lines', value: m.lines },
             ...(m.classes ? [{ label: 'Classes', value: m.classes.length }] : []),
           ],
+        })),
+        ...modules.ml_infrastructure.map(m => ({
+          name: m.name,
+          description: m.description,
+          badge: 'ML',
+          typeColor: '#8b5cf6',
+          path: m.path,
+          details: m.lines ? [{ label: 'Lines', value: m.lines }] : [],
+        })),
+        ...modules.sentinel_x.map(m => ({
+          name: m.name,
+          description: m.description,
+          badge: 'SENTINEL X',
+          typeColor: '#ec4899',
+          path: m.path,
+          details: m.lines ? [{ label: 'Lines', value: m.lines }] : [],
         })),
         ...modules.support.map(m => ({
           name: m.name,
@@ -552,7 +568,7 @@ function App() {
               style={{ cursor: 'pointer' }}
             >
               <FileCode style={{ color: '#22c55e' }} />
-              <span>27 Python Files</span>
+              <span>38 Python Files</span>
               <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.5 }} />
             </motion.div>
 

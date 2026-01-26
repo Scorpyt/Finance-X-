@@ -414,6 +414,18 @@ const createNodes = (onSelect) => [
     { id: 'bloomberg', position: { x: 390, y: 260 }, data: { label: 'bloomberg_engine.py', subtitle: 'Bloomberg Features', type: 'engine', moduleId: 'bloomberg_engine', onSelect }, type: 'custom' },
     { id: 'study', position: { x: 560, y: 260 }, data: { label: 'study_engine.py', subtitle: 'News & Learning', type: 'engine', moduleId: 'study_engine', onSelect }, type: 'custom' },
     { id: 'perf', position: { x: 730, y: 260 }, data: { label: 'performance_engine.py', subtitle: 'Hardware Optimizer', type: 'engine', moduleId: 'performance_engine', onSelect }, type: 'custom' },
+
+    // ML Infrastructure Layer
+    { id: 'ml_engine', position: { x: 900, y: 120 }, data: { label: 'ml_engine.py', subtitle: 'ML Infrastructure', type: 'ml', moduleId: 'ml_engine', onSelect }, type: 'custom' },
+    { id: 'ml_predictor', position: { x: 900, y: 260 }, data: { label: 'ml_predictor.py', subtitle: 'Real-time Prediction', type: 'ml', moduleId: 'ml_predictor', onSelect }, type: 'custom' },
+    { id: 'feature_eng', position: { x: 1070, y: 260 }, data: { label: 'feature_engineering.py', subtitle: '50+ Indicators', type: 'ml', moduleId: 'feature_engineering', onSelect }, type: 'custom' },
+
+    // Sentinel X Cognitive Architecture
+    { id: 'perception', position: { x: 1240, y: 120 }, data: { label: 'perception_engine.py', subtitle: 'Layer 1: Perception', type: 'sentinel', moduleId: 'perception_engine', onSelect }, type: 'custom' },
+    { id: 'belief', position: { x: 1240, y: 260 }, data: { label: 'belief_engine.py', subtitle: 'Layer 2: Belief', type: 'sentinel', moduleId: 'belief_engine', onSelect }, type: 'custom' },
+    { id: 'reasoning', position: { x: 1410, y: 260 }, data: { label: 'reasoning_engine.py', subtitle: 'Layer 3: Reasoning', type: 'sentinel', moduleId: 'reasoning_engine', onSelect }, type: 'custom' },
+    { id: 'autonomous', position: { x: 1325, y: 400 }, data: { label: 'autonomous_loop.py', subtitle: 'Continuous Inference', type: 'sentinel', moduleId: 'autonomous_loop', onSelect }, type: 'custom' },
+
     { id: 'analyst', position: { x: 50, y: 400 }, data: { label: 'analyst.py', subtitle: 'Event Analysis', type: 'support', moduleId: 'analyst', onSelect }, type: 'custom' },
     { id: 'models', position: { x: 220, y: 400 }, data: { label: 'models.py', subtitle: 'Data Models', type: 'support', moduleId: 'models', onSelect }, type: 'custom' },
     { id: 'database', position: { x: 390, y: 400 }, data: { label: 'database.py', subtitle: 'SQLite Manager', type: 'support', moduleId: 'database', onSelect }, type: 'custom' },
@@ -443,6 +455,20 @@ const createEdges = (onEdgeClick) => [
     { id: 'e16', source: 'database', target: 'findb', type: 'custom', style: { stroke: '#06b6d4' }, data: { onEdgeClick } },
     { id: 'e17', source: 'database', target: 'userdb', type: 'custom', style: { stroke: '#06b6d4' }, data: { onEdgeClick } },
     { id: 'e18', source: 'user_data', target: 'userdb', type: 'custom', style: { stroke: '#06b6d4' }, data: { onEdgeClick } },
+
+    // ML Infrastructure connections
+    { id: 'e19', source: 'server', target: 'ml_engine', type: 'custom', style: { stroke: '#8b5cf6' }, data: { onEdgeClick } },
+    { id: 'e20', source: 'ml_engine', target: 'ml_predictor', type: 'custom', style: { stroke: '#8b5cf6' }, data: { onEdgeClick } },
+    { id: 'e21', source: 'ml_engine', target: 'feature_eng', type: 'custom', style: { stroke: '#8b5cf6' }, data: { onEdgeClick } },
+    { id: 'e22', source: 'ml_predictor', target: 'yfinance', type: 'custom', style: { stroke: '#a855f7' }, data: { onEdgeClick } },
+
+    // Sentinel X cognitive flow
+    { id: 'e23', source: 'server', target: 'perception', type: 'custom', style: { stroke: '#ec4899' }, data: { onEdgeClick } },
+    { id: 'e24', source: 'perception', target: 'belief', type: 'custom', animated: true, style: { stroke: '#ec4899' }, data: { onEdgeClick } },
+    { id: 'e25', source: 'belief', target: 'reasoning', type: 'custom', animated: true, style: { stroke: '#ec4899' }, data: { onEdgeClick } },
+    { id: 'e26', source: 'reasoning', target: 'autonomous', type: 'custom', style: { stroke: '#ec4899' }, data: { onEdgeClick } },
+    { id: 'e27', source: 'autonomous', target: 'perception', type: 'custom', animated: true, style: { stroke: '#ec4899', strokeDasharray: '5,5' }, data: { onEdgeClick } },
+    { id: 'e28', source: 'perception', target: 'yfinance', type: 'custom', style: { stroke: '#a855f7' }, data: { onEdgeClick } },
 ];
 
 // ==================== HELPER FUNCTIONS ====================
@@ -455,6 +481,8 @@ const getTypeColor = (type) => {
         case 'extension': return '#a855f7';
         case 'data': return '#06b6d4';
         case 'frontend': return '#ec4899';
+        case 'ml': return '#8b5cf6';
+        case 'sentinel': return '#ec4899';
         default: return '#64748b';
     }
 };

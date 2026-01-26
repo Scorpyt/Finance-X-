@@ -69,9 +69,54 @@ class DatabaseManager:
                 )
             ''')
             
+            
             # Create indexes for performance
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_ticker_symbol ON ticker_history(symbol)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_ticker_timestamp ON ticker_history(timestamp)')
+            
+            # ML Prediction Tables
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ml_predictions (
+                    id SERIAL PRIMARY KEY,
+                    symbol VARCHAR(20) NOT NULL,
+                    prediction_date TIMESTAMPTZ,
+                    predicted_direction VARCHAR(10),
+                    confidence_score NUMERIC(5,4),
+                    actual_direction VARCHAR(10),
+                    model_version VARCHAR(20),
+                    features_json TEXT
+                )
+            ''')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ml_models (
+                    id SERIAL PRIMARY KEY,
+                    model_name VARCHAR(50),
+                    model_type VARCHAR(50),
+                    version VARCHAR(20),
+                    trained_date TIMESTAMPTZ,
+                    accuracy NUMERIC(6,4),
+                    precision_score NUMERIC(6,4),
+                    recall_score NUMERIC(6,4),
+                    f1_score NUMERIC(6,4),
+                    model_path TEXT
+                )
+            ''')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ml_performance (
+                    id SERIAL PRIMARY KEY,
+                    date TIMESTAMPTZ,
+                    total_predictions INTEGER,
+                    correct_predictions INTEGER,
+                    accuracy NUMERIC(6,4),
+                    sharpe_ratio NUMERIC(8,4)
+                )
+            ''')
+            
+            # ML indexes
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_ml_pred_symbol ON ml_predictions(symbol)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_ml_pred_date ON ml_predictions(prediction_date)')
             
         else:
             # SQLite schema (same as before)
@@ -103,6 +148,46 @@ class DatabaseManager:
                     state TEXT,
                     risk_score REAL,
                     regime TEXT
+                )
+            ''')
+            
+            # ML Prediction Tables
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ml_predictions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    prediction_date TEXT,
+                    predicted_direction TEXT,
+                    confidence_score REAL,
+                    actual_direction TEXT,
+                    model_version TEXT,
+                    features_json TEXT
+                )
+            ''')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ml_models (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    model_name TEXT,
+                    model_type TEXT,
+                    version TEXT,
+                    trained_date TEXT,
+                    accuracy REAL,
+                    precision_score REAL,
+                    recall_score REAL,
+                    f1_score REAL,
+                    model_path TEXT
+                )
+            ''')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ml_performance (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT,
+                    total_predictions INTEGER,
+                    correct_predictions INTEGER,
+                    accuracy REAL,
+                    sharpe_ratio REAL
                 )
             ''')
         
@@ -199,4 +284,28 @@ class DatabaseManager:
             return rows
         except Exception as e:
             print(f"[DB Error] Get Price History: {e}")
+            return []
+    
+    def execute_query(self, query: str, params: tuple = None) -> List:
+        """Execute a custom query (for ML engine)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            
+            # Check if it's a SELECT query
+            if query.strip().upper().startswith('SELECT'):
+                results = cursor.fetchall()
+            else:
+                conn.commit()
+                results = []
+            
+            self._release(conn)
+            return results
+        except Exception as e:
+            print(f"[DB Error] Execute Query: {e}")
             return []

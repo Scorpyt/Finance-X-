@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Body, Header
+from fastapi import FastAPI, HTTPException, Body, Header, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,6 +18,34 @@ from heatmap import HeatmapGenerator, sector_performance_heatmap, market_overvie
 import secrets
 import pandas as pd
 import numpy as np
+import logging
+
+# New Models Ecosystem
+from models import (
+    MLPrediction, BeliefDistribution, Portfolio, 
+    RiskLevel, ConfidenceLevel, PredictionDirection,
+    BeliefState, MarketRegime
+)
+
+# Robust Imports for ML & Sentinel Systems
+ML_AVAILABLE = False
+SENTINEL_AVAILABLE = False
+
+try:
+    from ML import ml_predictor, ml_engine, ml_models
+    ML_AVAILABLE = True
+    print("[SERVER] ML System: AVAILABLE")
+except ImportError as e:
+    print(f"[SERVER] ML System: UNAVAILABLE ({e})")
+
+try:
+    from sentinel_ml.belief import belief_engine
+    from sentinel_ml.perception import perception_engine
+    from sentinel_ml.reasoning import reasoning_engine
+    SENTINEL_AVAILABLE = True
+    print("[SERVER] Sentinel X: AVAILABLE")
+except Exception as e:
+    print(f"[SERVER] Sentinel X: UNAVAILABLE ({e})")
 
 ADMIN_KEY = "FIN-X-" + secrets.token_hex(2).upper()
 print(f"\n{'='*40}\n[SECURITY] ADMIN ACCESS KEY: {ADMIN_KEY}\n{'='*40}\n")
@@ -58,6 +86,164 @@ for _ in range(96): # 96 * 15 mins = 24 hours
     engine.apply_decay(current_time)
     engine.detect_state(current_time)
 print("System ready.")
+
+# --- REST API Endpoints (from Web Terminal) ---
+
+@app.get("/api/stats")
+def get_stats():
+    """Get coverage statistics"""
+    try:
+        stats = india_engine.get_coverage_stats()
+        return {"success": True, "data": stats}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/nifty50")
+def get_nifty50():
+    """Get NIFTY 50 stocks"""
+    try:
+        data = india_engine.fetch_market_snapshot(categories=['NIFTY_50'])
+        return {"success": True, "data": data, "count": len(data)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/sector/{sector}")
+def get_sector(sector: str):
+    """Get sector stocks"""
+    try:
+        data = india_engine.get_sector_stocks(sector.upper())
+        return {"success": True, "sector": sector.upper(), "data": data, "count": len(data)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/search")
+def search_stocks(q: str = Query("", description="Search query")):
+    """Search stocks"""
+    try:
+        matches = india_engine.search_stocks(q)
+        return {"success": True, "query": q, "data": matches, "count": len(matches)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/summary")
+def get_summary(categories: str = "NIFTY_50,BANK,IT"):
+    """Get market summary"""
+    try:
+        cat_list = categories.split(',')
+        summary = india_engine.get_category_summary(cat_list)
+        return {"success": True, "data": summary}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/top-movers")
+def get_movers(category: Optional[str] = None, top_n: int = 10):
+    """Get top movers"""
+    try:
+        movers = india_engine.get_top_movers(category=category, top_n=top_n)
+        return {"success": True, "data": movers}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/market-map")
+def get_market_map():
+    """Get data for market map visualization"""
+    try:
+        data = india_engine.fetch_market_snapshot(categories=['NIFTY_50', 'BANK', 'IT', 'AUTO', 'PHARMA'])
+        return {"success": True, "data": data}
+    except Exception as e:
+        return {"success": True, "data": data}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+# --- NEW ENDPOINTS FOR ENHANCED TERMINAL ---
+
+@app.get("/api/ml/predict/{symbol}")
+def get_ml_prediction(symbol: str):
+    """Get ML prediction for a symbol"""
+    if not ML_AVAILABLE:
+        # Mock prediction if ML not available (for demo)
+        return {
+            "success": True, 
+            "symbol": symbol.upper(),
+            "prediction": {
+                "direction": random.choice(["UP", "DOWN", "NEUTRAL"]),
+                "confidence": round(random.uniform(0.65, 0.95), 2),
+                "risk_level": random.choice(["LOW", "MODERATE", "HIGH"]),
+                "horizon": "SHORT_TERM",
+                "is_mock": True
+            }
+        }
+    
+    try:
+        # Real ML prediction would go here
+        # prediction = ml_predictor.predict(symbol)
+        return {"success": True, "error": "ML inference not fully connected yet"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/sentinel/belief")
+def get_sentinel_belief():
+    """Get current Sentinel X belief state"""
+    if not SENTINEL_AVAILABLE:
+        # Mock belief for demo
+        return {
+            "success": True,
+            "data": {
+                "dominant_regime": "STRESSED",
+                "entropy": 1.845,
+                "distribution": {
+                    "stable": 0.15,
+                    "transitional": 0.35,
+                    "stressed": 0.40,
+                    "crisis": 0.10
+                },
+                "is_mock": True
+            }
+        }
+    return {"success": True, "error": "Sentinel engine waiting for initialization"}
+
+@app.get("/api/portfolio/{user_id}")
+def get_portfolio(user_id: str):
+    """Get user portfolio analytics"""
+    # Demo portfolio
+    return {
+        "success": True,
+        "data": {
+            "user_id": user_id,
+            "total_value": 89540.50,
+            "pnl": 5400.25,
+            "pnl_pct": 6.42,
+            "win_rate": 0.55,
+            "positions": [
+                {"symbol": "AAPL", "qty": 100, "pnl": 1200.50, "pnl_pct": 8.5},
+                {"symbol": "NVDA", "qty": 50, "pnl": 4500.00, "pnl_pct": 15.2},
+                {"symbol": "TSLA", "qty": 200, "pnl": -300.25, "pnl_pct": -1.5}
+            ]
+        }
+    }
+
+@app.get("/api/analytics/volatility/{symbol}")
+def get_volatility_analytics(symbol: str):
+    """Get detailed volatility analytics"""
+    ticker = engine.get_ticker(symbol)
+    if not ticker:
+        return {"success": False, "error": "Symbol not found"}
+        
+    hist = pd.DataFrame([{'price': p.price} for p in ticker.history])
+    if hist.empty:
+        return {"success": False, "error": "No history data"}
+        
+    vol = historical_volatility(hist['price'], window=20).iloc[-1]
+    
+    return {
+        "success": True,
+        "symbol": symbol,
+        "volatility": vol,
+        "annualized": vol * np.sqrt(252),
+        "regime": "HIGH_VOL" if vol > 0.02 else "LOW_VOL"
+    }
+
+# ----------------------------------------------
 
 class CommandRequest(BaseModel):
     command: str
@@ -668,3 +854,10 @@ def step_simulation():
         engine.ingest(MarketEvent(current_time, "SIM", desc, impact, "GEN"))
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+if __name__ == "__main__":
+    import uvicorn
+    print("\n" + "="*50)
+    print("  FINANCE-X SERVER STARTING")
+    print("="*50 + "\n")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

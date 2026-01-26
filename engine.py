@@ -29,23 +29,33 @@ class TechnicalAnalysis:
     @staticmethod
     def analyze_risk_depth(ticker: Ticker) -> Dict:
         """Analyzes price position relative to bands to determine Risk Depth."""
-        if len(ticker.history) < 20:
-             return {"depth": "LOW", "advice": "INSUFFICIENT DATA", "bid": 0.0}
+        if not ticker.history or len(ticker.history) < 5:
+             return {"depth": "UNKNOWN", "advice": "INSUFFICIENT DATA", "bid": 0.0, "volatility": 0.0}
 
         u, m, l = TechnicalAnalysis.calculate_bollinger_bands(ticker.history)
+        
+        if not u or not m or not l:
+             return {"depth": "UNKNOWN", "advice": "CALCULATION ERROR", "bid": 0.0, "volatility": 0.0}
+
         current_price = ticker.current_price
         upper_curr = u[-1]
         lower_curr = l[-1]
+        mid_curr = m[-1]
+        
+        # Avoid division by zero
+        volatility = 0.0
+        if mid_curr > 0:
+            volatility = (upper_curr - lower_curr) / mid_curr
         
         # Depth Logic
         if current_price > upper_curr:
              depth = "CRITICAL (OVERBOUGHT)"
              advice = "SELL / HEDGE"
-             best_bid = lower_curr # Target return to mean or lower
+             best_bid = lower_curr 
         elif current_price < lower_curr:
              depth = "OPPORTUNITY (OVERSOLD)"
              advice = "ACCUMULATE"
-             best_bid = current_price * 0.98 # Aggressive Bid
+             best_bid = current_price * 0.98
         else:
              depth = "NEUTRAL"
              advice = "HOLD"
@@ -55,7 +65,7 @@ class TechnicalAnalysis:
             "depth": depth,
             "advice": advice,
             "bid": best_bid,
-            "volatility": (upper_curr - lower_curr) / m[-1]
+            "volatility": volatility
         }
 
 class MarketSimulator:
@@ -220,7 +230,22 @@ class IntelligenceEngine:
                 "price": t.current_price,
                 "change": t.change_pct,
                 "sector": t.sector,
-                "history": [p.price for p in t.history[-30:]] # Last 30 points for sparkline
+                "history": [p.price for p in t.history[-30:]]
             }
             for t in self.simulator.tickers.values()
         ]
+
+    def get_market_chart_data(self, symbol: str) -> Dict:
+        """Returns chart data suitable for the frontend."""
+        ticker = self.get_ticker(symbol)
+        if not ticker:
+            return {"error": "Symbol not found"}
+        
+        return {
+            "symbol": ticker.symbol,
+            "period": "1D",
+            "history": [
+                {"t": p.timestamp.strftime('%H:%M'), "p": p.price, "v": p.volume} 
+                for p in ticker.history
+            ]
+        }

@@ -180,6 +180,16 @@
   border-color: #06b6d4;
 }
 
+.custom-node.ml {
+  background: linear-gradient(135deg, #6b21a8, #8b5cf6);
+  border-color: #8b5cf6;
+}
+
+.custom-node.sentinel {
+  background: linear-gradient(135deg, #be185d, #ec4899);
+  border-color: #ec4899;
+}
+
 .node-title {
   font-weight: 600;
   font-size: 13px;

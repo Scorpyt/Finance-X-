@@ -34,3 +34,16 @@ services:
           type: web
           name: jarvis-auth-server
           envVarKey: RENDER_EXTERNAL_URL
+
+  # Finance-X Terminal (Python)
+  - type: web
+    name: finance-x-terminal
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements_extended.txt"
+    startCommand: "uvicorn server:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: DATABASE_URL
+        sync: false

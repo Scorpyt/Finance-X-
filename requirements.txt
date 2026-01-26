@@ -31,3 +31,8 @@ psutil==5.9.8
 
 # RSS Feed parsing
 feedparser==6.0.10
+
+# Web scraping and parsing for economic calendar
+beautifulsoup4==4.12.0
+lxml==4.9.0
+python-dateutil==2.8.2
