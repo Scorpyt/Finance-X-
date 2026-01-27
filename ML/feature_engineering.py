@@ -123,7 +123,7 @@ class FeatureEngineer:
         df['return_20d'] = df['close'].pct_change(20)
         
         # Moving Averages
-        for period in [5, 10, 20, 50, 200]:
+        for period in [5, 10, 12, 20, 26, 50, 200]:
             df[f'sma_{period}'] = df['close'].rolling(window=period).mean()
             df[f'ema_{period}'] = df['close'].ewm(span=period, adjust=False).mean()
             df[f'price_to_sma_{period}'] = df['close'] / df[f'sma_{period}']

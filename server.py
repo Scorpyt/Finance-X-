@@ -1,10 +1,13 @@
-from fastapi import FastAPI, HTTPException, Body, Header, Query
+﻿from fastapi import FastAPI, HTTPException, Body, Header, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
 import random
+import json
+import math
 
 from models import MarketEvent, SystemState
 from engine import IntelligenceEngine
@@ -33,6 +36,7 @@ SENTINEL_AVAILABLE = False
 
 try:
     from ML import ml_predictor, ml_engine, ml_models
+    from ML.ml_engine import MLEngine
     ML_AVAILABLE = True
     print("[SERVER] ML System: AVAILABLE")
 except ImportError as e:
@@ -51,7 +55,28 @@ ADMIN_KEY = "FIN-X-" + secrets.token_hex(2).upper()
 print(f"\n{'='*40}\n[SECURITY] ADMIN ACCESS KEY: {ADMIN_KEY}\n{'='*40}\n")
 SESSION_TOKENS = set()
 
-app = FastAPI(title="Financial Intelligence Terminal")
+
+# Custom JSON sanitization to handle NaN/Inf values
+def sanitize_for_json(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return 0.0
+        return obj
+    elif hasattr(obj, 'item'):
+        val = obj.item()
+        if isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
+            return 0.0
+        return val
+    return obj
+
+class SafeJSONResponse(JSONResponse):
+    def render(self, content):
+        return json.dumps(sanitize_for_json(content)).encode('utf-8')
+app = FastAPI(title="Financial Intelligence Terminal", default_response_class=SafeJSONResponse)
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,6 +94,7 @@ india_engine = IndiaMarketEngine()
 user_manager = UserManager()
 study_engine = StudyEngine()
 bloomberg_engine = BloombergEngine()
+ml_engine = MLEngine() if ML_AVAILABLE else None
 current_time = datetime(2024, 1, 1, 9, 0, 0) # Simulation Start
 
 # Seed Initial Data
@@ -328,12 +354,63 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         analysis = india_engine.get_stock_analysis(target)
         if "error" in analysis: return {"type": "ERROR", "content": analysis["error"]}
         
+        # Enhanced ML Analysis
+        ml_context = ""
+        ml_signal = None
+        ml_conf = 0
+        if ml_engine:
+            try:
+                ml_pred = ml_engine.predict(target)
+                if 'error' not in ml_pred:
+                    ml_signal = ml_pred.get('final_prediction')
+                    ml_conf = ml_pred.get('final_confidence', 0)
+                    ml_context = f"\n\n[AI MODEL INSIGHT]\nSignal: {ml_signal} ({ml_conf:.1%} Confidence)\n"
+                    ml_context += f"Key Factors: {', '.join(list(ml_pred.get('feature_importance', {}).keys())[:3])}"
+            except Exception as e:
+                print(f"ML Eval Error: {e}")
+
         return {
             "type": "REPORT",
             "title": f"DEEP DIVE: {analysis['symbol']}",
             "state": analysis['trend'],
             "risk_score": 0.0,
-            "details": f"PREDICTION: {analysis['prediction']}\nFACTORS: {', '.join(analysis['factors'])}\nPRICE: {analysis['price']}\nWARNING: {analysis.get('warning') or 'None'}"
+            "ml_signal": ml_signal,
+            "ml_confidence": ml_conf,
+            "details": f"PREDICTION: {analysis['prediction']}\nFACTORS: {', '.join(analysis['factors'])}\nPRICE: {analysis['price']}\nWARNING: {analysis.get('warning') or 'None'}" + ml_context
+        }
+
+    elif cmd.startswith("PREDICT "):
+        if not ml_engine:
+            return {"type": "ERROR", "content": "ML System Unavailable."}
+            
+        symbol = cmd.split(" ")[1]
+        
+        # UX Mapping
+        if symbol == "NIFTY": symbol = "^NSEI"
+        if symbol == "BANKNIFTY": symbol = "^NSEBANK"
+        
+        prediction = ml_engine.predict(symbol)
+        
+        # Smart Retry: If no model found, try appending .NS (common for Indian stocks)
+        if 'error' in prediction and "No trained model" in prediction.get('error', '') and not symbol.endswith(".NS") and not symbol.startswith("^"):
+            print(f"[SERVER] Base symbol {symbol} model not found. Retrying with {symbol}.NS...")
+            prediction_ns = ml_engine.predict(symbol + ".NS")
+            if 'error' not in prediction_ns:
+                prediction = prediction_ns
+                symbol = symbol + ".NS"  # Update symbol for display
+        
+        if 'error' in prediction:
+            return {"type": "ERROR", "content": f"Prediction error: {prediction['error']}"}
+            
+        return {
+            "type": "PREDICTION_VIEW",
+            "title": f"ðŸ§  AI PREDICTION: {symbol}",
+            "symbol": symbol,
+            "prediction": prediction.get('final_prediction', 'UNKNOWN'),
+            "confidence": prediction.get('final_confidence', 0),
+            "signal_strength": prediction.get('signal_strength', 'NEUTRAL'),
+            "features": prediction.get('feature_importance', {}),
+            "timestamp": prediction.get('timestamp')
         }
 
     elif cmd == "DISRUPTION":
@@ -341,7 +418,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
          status_text = "SAFE" if not alerts else "CRITICAL RISK"
          content = "Portfolio stable. No stop-loss breaches."
          if alerts:
-             content = "⚠️ WARNING: DISRUPTION DETECTED ⚠️\n" + "\n".join([f"{a['symbol']}: {a['message']}" for a in alerts])
+             content = "âš ï¸ WARNING: DISRUPTION DETECTED âš ï¸\n" + "\n".join([f"{a['symbol']}: {a['message']}" for a in alerts])
              
          return {
              "type": "TEXT",
@@ -464,7 +541,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         data = study_engine.get_study_overview()
         return {
             "type": "STUDY_VIEW",
-            "title": "📚 STUDY CENTER",
+            "title": "ðŸ“š STUDY CENTER",
             "news": data["news"],
             "resources": data["resources"],
             "glossary_count": data["glossary_count"],
@@ -477,7 +554,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         resources = study_engine.get_study_resources(topic)
         return {
             "type": "LEARN_VIEW",
-            "title": f"📖 Learning: {topic or 'All Topics'}",
+            "title": f"ðŸ“– Learning: {topic or 'All Topics'}",
             "resources": resources
         }
     
@@ -488,7 +565,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         glossary = study_engine.get_glossary(term)
         return {
             "type": "GLOSSARY_VIEW",
-            "title": f"📋 {term.title() if term else 'Market Glossary'}",
+            "title": f"ðŸ“‹ {term.title() if term else 'Market Glossary'}",
             "terms": glossary
         }
 
@@ -497,7 +574,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         rates = bloomberg_engine.get_fx_rates()
         return {
             "type": "FX_VIEW",
-            "title": "💱 LIVE FX RATES",
+            "title": "ðŸ’± LIVE FX RATES",
             "rates": rates,
             "updated": datetime.now().strftime("%H:%M:%S")
         }
@@ -509,7 +586,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         results = bloomberg_engine.screen_stocks(market_data, criteria)
         return {
             "type": "SCREENER_VIEW",
-            "title": f"🔍 SCREENER: {criteria.upper()}",
+            "title": f"ðŸ” SCREENER: {criteria.upper()}",
             "criteria": criteria.upper(),
             "results": results
         }
@@ -520,7 +597,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         summary = bloomberg_engine.get_market_summary(market_data)
         return {
             "type": "MOVERS_VIEW",
-            "title": "📈 TOP MOVERS",
+            "title": "ðŸ“ˆ TOP MOVERS",
             "gainers": movers["gainers"],
             "losers": movers["losers"],
             "summary": summary
@@ -530,7 +607,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         sectors = bloomberg_engine.get_sector_performance()
         return {
             "type": "SECTORS_VIEW",
-            "title": "🏢 SECTOR HEATMAP",
+            "title": "ðŸ¢ SECTOR HEATMAP",
             "sectors": sectors,
             "updated": datetime.now().strftime("%H:%M:%S")
         }
@@ -539,7 +616,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         events = bloomberg_engine.get_economic_calendar()
         return {
             "type": "CALENDAR_VIEW",
-            "title": "📅 ECONOMIC CALENDAR",
+            "title": "ðŸ“… ECONOMIC CALENDAR",
             "events": events
         }
     
@@ -577,7 +654,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
             
             return {
                 "type": "VOLATILITY_VIEW",
-                "title": f"📊 VOLATILITY ANALYSIS: {symbol}",
+                "title": f"ðŸ“Š VOLATILITY ANALYSIS: {symbol}",
                 "symbol": symbol,
                 "current_price": float(prices.iloc[-1]),
                 "metrics": {
@@ -633,7 +710,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         
         return {
             "type": "VOLSCAN_VIEW",
-            "title": "🔥 HIGH VOLATILITY SCANNER",
+            "title": "ðŸ”¥ HIGH VOLATILITY SCANNER",
             "count": len(vol_stocks),
             "data": vol_stocks[:15]  # Top 15
         }
@@ -649,7 +726,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
             
             return {
                 "type": "HEATMAP_VIEW",
-                "title": "🗺️ SECTOR PERFORMANCE HEATMAP",
+                "title": "ðŸ—ºï¸ SECTOR PERFORMANCE HEATMAP",
                 "heatmap_type": "sector",
                 "data": heatmap_data
             }
@@ -660,7 +737,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
             
             return {
                 "type": "HEATMAP_VIEW",
-                "title": "🗺️ MARKET OVERVIEW HEATMAP",
+                "title": "ðŸ—ºï¸ MARKET OVERVIEW HEATMAP",
                 "heatmap_type": "market",
                 "data": heatmap_data
             }
@@ -671,7 +748,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
             
             return {
                 "type": "HEATMAP_VIEW",
-                "title": "🗺️ VOLUME HEATMAP",
+                "title": "ðŸ—ºï¸ VOLUME HEATMAP",
                 "heatmap_type": "volume",
                 "data": heatmap_data
             }
@@ -702,7 +779,7 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
                 
                 return {
                     "type": "CORRELATION_VIEW",
-                    "title": "🔗 CORRELATION MATRIX",
+                    "title": "ðŸ”— CORRELATION MATRIX",
                     "data": heatmap_data
                 }
             else:
@@ -725,12 +802,25 @@ def process_command(req: CommandRequest, x_auth_token: str = Header(None)):
         from engine import TechnicalAnalysis
         analysis = TechnicalAnalysis.analyze_risk_depth(ticker)
         
+        # Enhanced ML Advice
+        ml_advice = ""
+        ml_signal = None
+        if ml_engine:
+            try:
+                ml_pred = ml_engine.predict(target)
+                if 'error' not in ml_pred:
+                    ml_signal = ml_pred['final_prediction']
+                    ml_advice = f"\n\nðŸ¤— AI MODEL CONSENSUS:\nThe ML model is {ml_pred['final_prediction']} on {target} with {ml_pred['final_confidence']:.0%} confidence."
+            except:
+                pass
+
         return {
             "type": "REPORT",
             "title": f"ALGORITHMIC ADVISOR: {target}",
             "state": analysis['depth'],
             "risk_score": engine.detect_state(current_time).risk_score,
-            "details": f"STRATEGY: {analysis['advice']}\nBEST BID: {analysis['bid']:.2f}\nVOLATILITY SPREAD: {analysis['volatility']:.4f}\n\nLOGIC: Price deviation from Bollinger Mean suggests {analysis['depth'].lower()} conditions. Supply metrics confirm trend."
+            "ml_signal": ml_signal,
+            "details": f"STRATEGY: {analysis['advice']}\nBEST BID: {analysis['bid']:.2f}\nVOLATILITY SPREAD: {analysis['volatility']:.4f}\n\nLOGIC: Price deviation from Bollinger Mean suggests {analysis['depth'].lower()} conditions. Supply metrics confirm trend." + ml_advice
         }
         
 
@@ -861,3 +951,5 @@ if __name__ == "__main__":
     print("  FINANCE-X SERVER STARTING")
     print("="*50 + "\n")
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+

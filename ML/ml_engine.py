@@ -10,10 +10,16 @@ from datetime import datetime, timedelta
 import threading
 import time
 
-from feature_engineering import FeatureEngineer
-from ml_models import EnsembleModel, LSTMModel
-from ml_trainer import MLTrainer
-from ml_predictor import MLPredictor
+try:
+    from .feature_engineering import FeatureEngineer
+    from .ml_models import EnsembleModel, LSTMModel
+    from .ml_trainer import MLTrainer
+    from .ml_predictor import MLPredictor
+except ImportError:
+    from feature_engineering import FeatureEngineer
+    from ml_models import EnsembleModel, LSTMModel
+    from ml_trainer import MLTrainer
+    from ml_predictor import MLPredictor
 
 
 class MLEngine:

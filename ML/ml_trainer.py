@@ -12,8 +12,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-from feature_engineering import FeatureEngineer
-from ml_models import EnsembleModel, LSTMModel
+try:
+    from .feature_engineering import FeatureEngineer
+    from .ml_models import EnsembleModel, LSTMModel
+except ImportError:
+    from feature_engineering import FeatureEngineer
+    from ml_models import EnsembleModel, LSTMModel
 
 
 class MLTrainer:

@@ -8,7 +8,11 @@ from typing import Dict, List, Tuple, Optional
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
-from lightgbm import LGBMClassifier
+try:
+    from lightgbm import LGBMClassifier
+    LGBM_AVAILABLE = True
+except ImportError:
+    LGBM_AVAILABLE = False
 import joblib
 import os
 
@@ -44,7 +48,10 @@ class EnsembleModel:
                 n_jobs=-1,
                 eval_metric='logloss'
             ),
-            'lightgbm': LGBMClassifier(
+        }
+        
+        if LGBM_AVAILABLE:
+            self.models['lightgbm'] = LGBMClassifier(
                 n_estimators=200,
                 max_depth=8,
                 learning_rate=0.05,
@@ -54,7 +61,7 @@ class EnsembleModel:
                 n_jobs=-1,
                 verbose=-1
             )
-        }
+
         
         # Meta-learner for stacking
         self.meta_learner = LogisticRegression(random_state=42, max_iter=1000)
